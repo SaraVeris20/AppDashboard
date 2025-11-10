@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AppDashboard.Views.AdicionarUsuarioPage"
+             BackgroundColor="#F5F5F5">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        
+        <Grid Grid.Row="0" BackgroundColor="#2E4A8B" Padding="16,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <ImageButton Grid.Column="0"
+                        Source="back_arrow.png"
+                        BackgroundColor="Transparent"
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        VerticalOptions="Center"
+                        Clicked="OnBackClicked"/>
+
+            <Label Grid.Column="1"
+                   Text="Adicionar Usuário"
+                   FontSize="20"
+                   FontAttributes="Bold"
+                   TextColor="White"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Start"/>
+        </Grid>
+
+        
+        <ScrollView Grid.Row="1" Padding="20">
+            <VerticalStackLayout Spacing="20">
+
+                
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Nome completo"
+                           FontSize="14"
+                           TextColor="#333333"/>
+
+                    <Border StrokeThickness="1"
+                            Stroke="#E0E0E0"
+                            BackgroundColor="White"
+                            Padding="12"
+                            StrokeShape="RoundRectangle 8">
+                        <Grid ColumnDefinitions="24,*">
+                            <Image Grid.Column="0"
+                                   Source="person_icon.png"
+                                   WidthRequest="20"
+                                   HeightRequest="20"
+                                   VerticalOptions="Center"/>
+
+                            <Entry Grid.Column="1"
+                                   Text="{Binding Nome}"
+                                   Placeholder="Digite o nome completo"
+                                   PlaceholderColor="#CCCCCC"
+                                   TextColor="#333333"
+                                   FontSize="16"
+                                   BackgroundColor="Transparent"/>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="E-mail"
+                           FontSize="14"
+                           TextColor="#333333"/>
+
+                    <Border StrokeThickness="1"
+                            Stroke="#E0E0E0"
+                            BackgroundColor="White"
+                            Padding="12"
+                            StrokeShape="RoundRectangle 8">
+                        <Grid ColumnDefinitions="24,*">
+                            <Image Grid.Column="0"
+                                   Source="email_icon.png"
+                                   WidthRequest="20"
+                                   HeightRequest="20"
+                                   VerticalOptions="Center"/>
+
+                            <Entry Grid.Column="1"
+                                   Text="{Binding Email}"
+                                   Placeholder="Digite o e-mail"
+                                   PlaceholderColor="#CCCCCC"
+                                   TextColor="#333333"
+                                   FontSize="16"
+                                   Keyboard="Email"
+                                   BackgroundColor="Transparent"/>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Cargo"
+                           FontSize="14"
+                           TextColor="#333333"/>
+
+                    <Border StrokeThickness="1"
+                            Stroke="#E0E0E0"
+                            BackgroundColor="White"
+                            Padding="12"
+                            StrokeShape="RoundRectangle 8">
+                        <Grid ColumnDefinitions="24,*,24">
+                            <Image Grid.Column="0"
+                                   Source="briefcase_icon.png"
+                                   WidthRequest="20"
+                                   HeightRequest="20"
+                                   VerticalOptions="Center"/>
+
+                            <Picker Grid.Column="1"
+                                    ItemsSource="{Binding CargosDisponiveis}"
+                                    SelectedItem="{Binding CargoSelecionado}"
+                                    Title="Selecione um cargo"
+                                    TitleColor="#CCCCCC"
+                                    TextColor="#333333"
+                                    FontSize="16"
+                                    BackgroundColor="Transparent"/>
+
+                            <Image Grid.Column="2"
+                                   Source="dropdown_icon.png"
+                                   WidthRequest="16"
+                                   HeightRequest="16"
+                                   VerticalOptions="Center"/>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+                
+                <Button Text="Salvar Usuário"
+                        BackgroundColor="#2E4A8B"
+                        TextColor="White"
+                        FontSize="16"
+                        FontAttributes="Bold"
+                        HeightRequest="56"
+                        CornerRadius="8"
+                        Margin="0,20,0,0"
+                        Clicked="OnSalvarClicked"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>
