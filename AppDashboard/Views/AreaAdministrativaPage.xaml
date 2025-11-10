@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="AppDashboard.Views.AreaAdministrativaPage"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="#F5F5F5">
 
     <Grid>
@@ -11,22 +12,31 @@
             <RowDefinition Height="70"/>
         </Grid.RowDefinitions>
 
-        
-        <Grid Grid.Row="0" BackgroundColor="#2E4A8B" Padding="16,0">
+        <!-- Header -->
+        <Grid Grid.Row="0" BackgroundColor="#1E3A8A">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="60"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="60"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Botão Voltar -->
             <ImageButton Grid.Column="0"
-                        Source="back_arrow.png"
+                        Aspect="Center" 
+                        WidthRequest="30"
+                        HeightRequest="40"
                         BackgroundColor="Transparent"
-                        WidthRequest="24"
-                        HeightRequest="24"
-                        VerticalOptions="Center"
-                        Clicked="OnBackClicked"/>
+                        Clicked="OnBackClicked">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        Glyph="←" 
+                        FontFamily="Arial"
+                        Size="42" 
+                        Color="White"/>
+                </ImageButton.Source>
+            </ImageButton>
 
+            <!-- Título -->
             <Label Grid.Column="1"
                    Text="Área Administrativa"
                    FontSize="20"
@@ -35,58 +45,83 @@
                    VerticalOptions="Center"
                    HorizontalOptions="Start"/>
 
+            <!-- Menu -->
             <ImageButton Grid.Column="2"
-                        Source="menu_dots.png"
-                        BackgroundColor="Transparent"
+                        Aspect="Center" 
                         WidthRequest="24"
                         HeightRequest="24"
-                        VerticalOptions="Center"
-                        Clicked="OnMenuClicked"/>
+                        BackgroundColor="Transparent"
+                        Clicked="OnMenuClicked">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        Glyph="⋮" 
+                        FontFamily="Arial"
+                        Size="32" 
+                        Color="White"/>
+                </ImageButton.Source>
+            </ImageButton>
         </Grid>
 
-        
+        <!-- Conteúdo -->
         <ScrollView Grid.Row="1">
             <VerticalStackLayout Spacing="16" Padding="16">
 
-                
-                <Border StrokeThickness="1"
-                        Stroke="#E0E0E0"
-                        BackgroundColor="White"
-                        Padding="12"
-                        StrokeShape="RoundRectangle 8">
-                    <Grid ColumnDefinitions="*,24">
-                        <Picker Grid.Column="0"
-                                ItemsSource="{Binding UnidadesGrupos}"
+                <!-- Filtro de Unidades -->
+                <Frame BorderColor="#E0E0E0" 
+                       CornerRadius="8" 
+                       Padding="0"
+                       HasShadow="False"
+                       BackgroundColor="White">
+                    <Grid>
+                        <Picker ItemsSource="{Binding UnidadesGrupos}"
                                 SelectedItem="{Binding UnidadeSelecionada}"
                                 Title="Selecionar Unidade/Grupo"
                                 TitleColor="#666666"
                                 TextColor="#333333"
                                 FontSize="16"
+                                HeightRequest="50"
+                                Margin="15,0,40,0"
                                 BackgroundColor="Transparent"/>
 
-                        <Image Grid.Column="1"
-                               Source="dropdown_icon.png"
-                               WidthRequest="16"
-                               HeightRequest="16"
-                               VerticalOptions="Center"/>
+                        <Label Text="▼" 
+                               FontSize="12" 
+                               TextColor="#999999"
+                               VerticalOptions="Center"
+                               HorizontalOptions="End"
+                               Margin="0,0,15,0"
+                               InputTransparent="True"/>
                     </Grid>
-                </Border>
+                </Frame>
 
-                
+                <!-- Contador -->
+                <Label x:Name="lblContador"
+                       Text="0 usuários cadastrados"
+                       FontSize="14"
+                       TextColor="#666666"
+                       HorizontalOptions="Center"
+                       Margin="0,0,0,10"/>
+
+                <!-- Lista de Usuários -->
                 <CollectionView ItemsSource="{Binding Usuarios}"
-                               SelectionMode="None">
+                               SelectionMode="None"
+                               x:Name="collectionUsuarios">
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
-                            <Border StrokeThickness="1"
-                                   Stroke="#E0E0E0"
-                                   BackgroundColor="White"
-                                   Padding="16"
+                            <Frame BorderColor="#E0E0E0" 
+                                   CornerRadius="8" 
+                                   Padding="15"
                                    Margin="0,0,0,12"
-                                   StrokeShape="RoundRectangle 8">
-                                <Grid ColumnDefinitions="*,60" ColumnSpacing="12">
+                                   HasShadow="False"
+                                   BackgroundColor="White">
+                                <Grid ColumnDefinitions="*,60,50" 
+                                      ColumnSpacing="12"
+                                      RowDefinitions="Auto,Auto,Auto">
 
-                                    
-                                    <VerticalStackLayout Grid.Column="0" Spacing="4" VerticalOptions="Center">
+                                    <!-- Informações do Usuário -->
+                                    <VerticalStackLayout Grid.Column="0" 
+                                                       Grid.RowSpan="3"
+                                                       Spacing="4" 
+                                                       VerticalOptions="Center">
                                         <Label Text="{Binding Nome}"
                                                FontSize="16"
                                                FontAttributes="Bold"
@@ -96,43 +131,98 @@
                                                FontSize="14"
                                                TextColor="#666666"/>
 
-                                        <Label Text="{Binding Cargo}"
-                                               FontSize="12"
-                                               TextColor="#999999"/>
+                                        <HorizontalStackLayout Spacing="8">
+                                            <Frame Padding="8,4"
+                                                   BackgroundColor="#E3F2FD"
+                                                   BorderColor="Transparent"
+                                                   CornerRadius="4"
+                                                   HasShadow="False">
+                                                <Label Text="{Binding Cargo}"
+                                                       FontSize="12"
+                                                       TextColor="#1E3A8A"/>
+                                            </Frame>
+
+                                            <Frame Padding="8,4"
+                                                   BackgroundColor="#F3E5F5"
+                                                   BorderColor="Transparent"
+                                                   CornerRadius="4"
+                                                   HasShadow="False"
+                                                   IsVisible="{Binding UnidadeGrupo, Converter={StaticResource IsNotNullConverter}}">
+                                                <Label Text="{Binding UnidadeGrupo}"
+                                                       FontSize="12"
+                                                       TextColor="#7B1FA2"/>
+                                            </Frame>
+                                        </HorizontalStackLayout>
                                     </VerticalStackLayout>
 
-                                    
-                                    <Border Grid.Column="1"
-                                           StrokeThickness="0"
+                                    <!-- Avatar -->
+                                    <Frame Grid.Column="1"
+                                           Grid.RowSpan="3"
+                                           BorderColor="Transparent"
                                            BackgroundColor="#E0E0E0"
                                            WidthRequest="50"
                                            HeightRequest="50"
-                                           StrokeShape="RoundRectangle 25"
+                                           CornerRadius="25"
+                                           Padding="0"
+                                           HasShadow="False"
                                            VerticalOptions="Center">
-                                        <Image Source="{Binding FotoUrl}"
-                                              Aspect="AspectFill"/>
-                                    </Border>
+                                        <Label Text="👤"
+                                               FontSize="28"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Frame>
+
+                                    <!-- Botão Remover -->
+                                    <Button Grid.Column="2"
+                                           Grid.RowSpan="3"
+                                           Text="🗑️"
+                                           FontSize="20"
+                                           BackgroundColor="#EF5350"
+                                           TextColor="White"
+                                           WidthRequest="50"
+                                           HeightRequest="50"
+                                           CornerRadius="25"
+                                           Clicked="OnRemoverUsuario"
+                                           CommandParameter="{Binding Id}"/>
                                 </Grid>
-                            </Border>
+                            </Frame>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
+
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout HorizontalOptions="Center" 
+                                           VerticalOptions="Center"
+                                           Margin="0,50">
+                            <Label Text="📋"
+                                  FontSize="60"
+                                  HorizontalOptions="Center"/>
+                            <Label Text="Nenhum usuário cadastrado"
+                                  FontSize="16"
+                                  TextColor="#999999"
+                                  HorizontalOptions="Center"
+                                  Margin="0,10,0,0"/>
+                            <Label Text="Toque em 'Adicionar Usuário' para começar"
+                                  FontSize="14"
+                                  TextColor="#CCCCCC"
+                                  HorizontalOptions="Center"
+                                  Margin="0,5,0,0"/>
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
                 </CollectionView>
 
             </VerticalStackLayout>
         </ScrollView>
 
-        
-        <Border Grid.Row="2" 
-                Padding="16"
-                BackgroundColor="Transparent">
-            <Button Text="+ Adicionar Usuário"
-                    BackgroundColor="#2E4A8B"
-                    TextColor="White"
+        <!-- Botão Adicionar -->
+        <Grid Grid.Row="2" Padding="16">
+            <Button Text="➕ Adicionar Usuário"
                     FontSize="16"
                     FontAttributes="Bold"
+                    TextColor="White"
+                    BackgroundColor="#1E3A8A"
                     HeightRequest="56"
                     CornerRadius="8"
                     Clicked="OnAdicionarClicked"/>
-        </Border>
+        </Grid>
     </Grid>
 </ContentPage>

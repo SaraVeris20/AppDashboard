@@ -19,6 +19,15 @@ namespace AppDashboard.Views
         {
             base.OnAppearing();
             _viewModel.CarregarDados();
+            AtualizarContador();
+        }
+
+        private void AtualizarContador()
+        {
+            var total = _viewModel.Usuarios.Count;
+            lblContador.Text = total == 1
+                ? "1 usuário cadastrado"
+                : $"{total} usuários cadastrados";
         }
 
         private async void OnBackClicked(object sender, EventArgs e)
@@ -31,20 +40,49 @@ namespace AppDashboard.Views
             string action = await DisplayActionSheet(
                 "Opções",
                 "Cancelar",
-                null,
-                "Configurações",
-                "Exportar Lista",
-                "Atualizar");
+                "Limpar Todos",
+                "Atualizar",
+                "Exportar Lista");
 
-            if (action == "Atualizar")
+            switch (action)
             {
-                _viewModel.CarregarDados();
+                case "Atualizar":
+                    _viewModel.CarregarDados();
+                    AtualizarContador();
+                    break;
+
+                case "Limpar Todos":
+                    if (_viewModel.LimparTodosCommand.CanExecute(null))
+                    {
+                        _viewModel.LimparTodosCommand.Execute(null);
+                        AtualizarContador();
+                    }
+                    break;
+
+                case "Exportar Lista":
+                    await DisplayAlert("Em Desenvolvimento", "Funcionalidade em desenvolvimento", "OK");
+                    break;
             }
         }
 
         private async void OnAdicionarClicked(object sender, EventArgs e)
         {
             await Shell.Current.GoToAsync(nameof(AdicionarUsuarioPage));
+        }
+
+        private async void OnRemoverUsuario(object sender, EventArgs e)
+        {
+            var button = (Button)sender;
+            var usuarioId = button.CommandParameter?.ToString();
+
+            if (!string.IsNullOrEmpty(usuarioId))
+            {
+                if (_viewModel.RemoverUsuarioCommand.CanExecute(usuarioId))
+                {
+                    _viewModel.RemoverUsuarioCommand.Execute(usuarioId);
+                    AtualizarContador();
+                }
+            }
         }
     }
 }

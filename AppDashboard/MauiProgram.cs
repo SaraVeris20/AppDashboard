@@ -18,14 +18,14 @@ namespace AppDashboard
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            
+            // Registrar Serviço como Singleton (instância única)
             builder.Services.AddSingleton<UsuarioService>();
 
-            
+            // Registrar Páginas
             builder.Services.AddTransient<AreaAdministrativaPage>();
             builder.Services.AddTransient<AdicionarUsuarioPage>();
 
-            
+            // Registrar ViewModels
             builder.Services.AddTransient<AreaAdministrativaViewModel>();
             builder.Services.AddTransient<AdicionarUsuarioViewModel>();
 

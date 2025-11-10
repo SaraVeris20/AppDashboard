@@ -12,7 +12,9 @@ namespace AppDashboard.ViewModels
         private string _nome = string.Empty;
         private string _email = string.Empty;
         private string _cargoSelecionado = string.Empty;
+        private string? _unidadeGrupoSelecionada;
         private List<string> _cargosDisponiveis;
+        private List<string> _unidadesGrupos;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -49,12 +51,32 @@ namespace AppDashboard.ViewModels
             }
         }
 
+        public string? UnidadeGrupoSelecionada
+        {
+            get => _unidadeGrupoSelecionada;
+            set
+            {
+                _unidadeGrupoSelecionada = value;
+                OnPropertyChanged();
+            }
+        }
+
         public List<string> CargosDisponiveis
         {
             get => _cargosDisponiveis;
             set
             {
                 _cargosDisponiveis = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public List<string> UnidadesGrupos
+        {
+            get => _unidadesGrupos;
+            set
+            {
+                _unidadesGrupos = value;
                 OnPropertyChanged();
             }
         }
@@ -66,16 +88,20 @@ namespace AppDashboard.ViewModels
         {
             _usuarioService = usuarioService;
             _cargosDisponiveis = new List<string>();
+            _unidadesGrupos = new List<string>();
 
             SalvarCommand = new Command(async () => await SalvarUsuario(), PodeSalvar);
             VoltarCommand = new Command(async () => await Voltar());
 
-            CarregarCargos();
+            CarregarDados();
         }
 
-        private void CarregarCargos()
+        private void CarregarDados()
         {
             CargosDisponiveis = _usuarioService.ObterCargosDisponiveis();
+            var unidades = _usuarioService.ObterUnidadesGrupos();
+            // Remove "Todas as Unidades" da lista de seleção
+            UnidadesGrupos = unidades.Where(u => u != "Todas as Unidades").ToList();
         }
 
         private bool PodeSalvar()
@@ -103,19 +129,20 @@ namespace AppDashboard.ViewModels
         {
             var novoUsuario = new Usuario
             {
-                Nome = Nome,
-                Email = Email,
+                Nome = Nome.Trim(),
+                Email = Email.Trim().ToLower(),
                 Cargo = CargoSelecionado,
+                UnidadeGrupo = UnidadeGrupoSelecionada,
                 FotoUrl = "default_avatar.png"
             };
 
-            bool sucesso = _usuarioService.AdicionarUsuario(novoUsuario);
+            bool sucesso = await _usuarioService.AdicionarUsuario(novoUsuario);
 
             if (sucesso)
             {
                 await Application.Current.MainPage.DisplayAlert(
-                    "Sucesso",
-                    "Usuário adicionado com sucesso!",
+                    "Sucesso! 🎉",
+                    $"Usuário '{novoUsuario.Nome}' adicionado com sucesso!",
                     "OK");
 
                 LimparCampos();
@@ -132,17 +159,24 @@ namespace AppDashboard.ViewModels
 
         private async Task Voltar()
         {
-            bool resposta = await Application.Current.MainPage.DisplayAlert(
-                "Confirmação",
-                "Deseja sair sem salvar?",
-                "Sim",
-                "Não");
+            bool temDados = !string.IsNullOrWhiteSpace(Nome) ||
+                           !string.IsNullOrWhiteSpace(Email) ||
+                           !string.IsNullOrWhiteSpace(CargoSelecionado);
 
-            if (resposta)
+            if (temDados)
             {
-                LimparCampos();
-                await Shell.Current.GoToAsync("..");
+                bool resposta = await Application.Current.MainPage.DisplayAlert(
+                    "Confirmação",
+                    "Deseja sair sem salvar?",
+                    "Sim",
+                    "Não");
+
+                if (!resposta)
+                    return;
             }
+
+            LimparCampos();
+            await Shell.Current.GoToAsync("..");
         }
 
         private void LimparCampos()
@@ -150,6 +184,7 @@ namespace AppDashboard.ViewModels
             Nome = string.Empty;
             Email = string.Empty;
             CargoSelecionado = string.Empty;
+            UnidadeGrupoSelecionada = null;
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

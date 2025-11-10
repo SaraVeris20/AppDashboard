@@ -17,30 +17,13 @@ namespace AppDashboard.Views
 
         private async void OnBackClicked(object sender, EventArgs e)
         {
-            bool resposta = await DisplayAlert(
-                "Confirmação",
-                "Deseja sair sem salvar?",
-                "Sim",
-                "Não");
-
-            if (resposta)
+            if (_viewModel.VoltarCommand.CanExecute(null))
             {
-                await Shell.Current.GoToAsync("..");
-            }
-        }
-
-        private async void OnSalvarClicked(object sender, EventArgs e)
-        {
-            if (_viewModel.SalvarCommand.CanExecute(null))
-            {
-                _viewModel.SalvarCommand.Execute(null);
+                _viewModel.VoltarCommand.Execute(null);
             }
             else
             {
-                await DisplayAlert(
-                    "Atenção",
-                    "Por favor, preencha todos os campos corretamente.",
-                    "OK");
+                await Shell.Current.GoToAsync("..");
             }
         }
     }

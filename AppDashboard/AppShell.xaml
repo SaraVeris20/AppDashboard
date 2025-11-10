@@ -1,14 +1,16 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<Shell
-    x:Class="AppDashboard.AppShell"
-    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:AppDashboard.Views"
-    Shell.FlyoutBehavior="Disabled">
+ using AppDashboard.Views;
 
-    <ShellContent
-        Title="Dashboard"
-        ContentTemplate="{DataTemplate local:AreaAdministrativaPage}"
-        Route="AreaAdministrativaPage" />
+namespace AppDashboard
+{
+    public partial class AppShell : Shell
+    {
+        public AppShell()
+        {
+            InitializeComponent();
 
-</Shell>
+            // Registrar rotas para navegação
+            Routing.RegisterRoute(nameof(AdicionarUsuarioPage), typeof(AdicionarUsuarioPage));
+            Routing.RegisterRoute(nameof(AreaAdministrativaPage), typeof(AreaAdministrativaPage));
+        }
+    }
+}
