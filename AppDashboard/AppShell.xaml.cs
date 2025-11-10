@@ -1,12 +1,16 @@
-﻿namespace AppDashboard
+﻿using AppDashboard.Views;
+
+namespace AppDashboard
 {
-    public partial class App : Application
+    public partial class AppShell : Shell
     {
-        // Remova o construtor duplicado "App()" desta classe.
-        public App()
+        public AppShell()
         {
             InitializeComponent();
-            MainPage = new AppShell();
+
+            // Registrar rotas para navegação
+            Routing.RegisterRoute(nameof(AdicionarUsuarioPage), typeof(AdicionarUsuarioPage));
+            Routing.RegisterRoute(nameof(AreaAdministrativaPage), typeof(AreaAdministrativaPage));
         }
     }
 }
