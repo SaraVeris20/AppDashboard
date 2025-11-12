@@ -1,23 +1,131 @@
-﻿namespace AppDashboard.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace AppDashboard.Models
 {
+    [Table("rhdataset")]
     public class Usuario
     {
-        public string Id { get; set; }
-        public string Nome { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Cargo { get; set; } = string.Empty;
-        public string FotoUrl { get; set; } = string.Empty;
-        public string? UnidadeGrupo { get; set; }
-        public DateTime DataCriacao { get; set; } = DateTime.Now;
-        public bool Ativo { get; set; } = true;
 
-        public Usuario()
+        [Key]
+        [Column("cadastro")]
+        public int Id { get; set; }
+
+        [Column("nome")]
+        public string Nome { get; set; } = string.Empty;
+
+
+        [Column("cargo")]
+        public string Cargo { get; set; } = string.Empty;
+
+        [Column("Descrição (Situação)")]
+        public string? DescricaoSituacao { get; set; }
+
+        [Column("Descrição (C.Custo)")] 
+        public string? UnidadeGrupo { get; set; }
+
+        [Column("foto_url")]
+        public string? FotoUrl { get; set; }
+
+      
+        [NotMapped]
+        public bool EstaAtivo
         {
-            Id = Guid.NewGuid().ToString();
-            DataCriacao = DateTime.Now;
+            get
+            {
+                if (string.IsNullOrEmpty(DescricaoSituacao))
+                    return false;
+
+                return DescricaoSituacao.Equals("Trabalhando", StringComparison.OrdinalIgnoreCase);
+            }
         }
 
-        // Para exibição em listas
-        public string ResumoInfo => $"{Nome} - {Cargo}";
+        [NotMapped]
+        public bool EstaDemitido
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(DescricaoSituacao))
+                    return false;
+
+                return DescricaoSituacao.Equals("Demitido", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [NotMapped]
+        public bool EstaAposentadoPorInvalidez
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(DescricaoSituacao))
+                    return false;
+
+                return DescricaoSituacao.Equals("Aposentadoria por Invalidez", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [NotMapped]
+        public bool EstaEmAuxilioDoenca
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(DescricaoSituacao))
+                    return false;
+
+                return DescricaoSituacao.Equals("Auxilio Doença", StringComparison.OrdinalIgnoreCase) ||
+                       DescricaoSituacao.Equals("Auxílio Doença", StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        [NotMapped]
+        public string StatusDescricao
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(DescricaoSituacao))
+                    return "Não Informado";
+
+                return DescricaoSituacao;
+            }
+        }
+
+        [NotMapped]
+        public string StatusEmoji
+        {
+            get
+            {
+                if (EstaAtivo) return "✅";
+                if (EstaDemitido) return "❌";
+                if (EstaAposentadoPorInvalidez) return "🏥";
+                if (EstaEmAuxilioDoenca) return "🤕";
+                return "❓";
+            }
+        }
+
+        [NotMapped]
+        public string StatusCor
+        {
+            get
+            {
+                if (EstaAtivo) return "#4CAF50"; // Verde
+                if (EstaDemitido) return "#F44336"; // Vermelho
+                if (EstaAposentadoPorInvalidez) return "#9C27B0"; // Roxo
+                if (EstaEmAuxilioDoenca) return "#FF9800"; // Laranja
+                return "#9E9E9E"; // Cinza
+            }
+        }
+
+        [NotMapped]
+        public string StatusCorFundo
+        {
+            get
+            {
+                if (EstaAtivo) return "#E8F5E9"; 
+                if (EstaDemitido) return "#FFEBEE"; 
+                if (EstaAposentadoPorInvalidez) return "#F3E5F5";
+                if (EstaEmAuxilioDoenca) return "#FFF3E0"; 
+                return "#F5F5F5";
+            }
+        }
     }
 }

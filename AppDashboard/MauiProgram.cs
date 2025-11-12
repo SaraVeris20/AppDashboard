@@ -1,7 +1,9 @@
-﻿using Microsoft.Extensions.Logging;
-using AppDashboard.Views;
-using AppDashboard.ViewModels;
+﻿using AppDashboard.Data;
 using AppDashboard.Services;
+using AppDashboard.ViewModels;
+using AppDashboard.Views;
+using Microsoft.Extensions.Logging;
+using System;
 
 namespace AppDashboard
 {
@@ -18,16 +20,17 @@ namespace AppDashboard
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
-            // Registrar Serviço como Singleton (instância única)
+            // Registrar DbContext
+            builder.Services.AddSingleton<AppDbContext>();
+
+            // Registrar serviços
             builder.Services.AddSingleton<UsuarioService>();
 
-            // Registrar Páginas
+            // Registrar páginas
             builder.Services.AddTransient<AreaAdministrativaPage>();
-            builder.Services.AddTransient<AdicionarUsuarioPage>();
 
             // Registrar ViewModels
             builder.Services.AddTransient<AreaAdministrativaViewModel>();
-            builder.Services.AddTransient<AdicionarUsuarioViewModel>();
 
 #if DEBUG
             builder.Logging.AddDebug();

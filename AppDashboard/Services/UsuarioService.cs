@@ -1,236 +1,432 @@
-﻿using AppDashboard.Models;
+﻿using AppDashboard.Data;
+using AppDashboard.Models;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.ObjectModel;
-using System.Text.Json;
 
 namespace AppDashboard.Services
 {
     public class UsuarioService
     {
-        private const string USUARIOS_KEY = "usuarios_list";
-        private ObservableCollection<Usuario> _usuarios;
+        private readonly AppDbContext _context;
+        private ObservableCollection<Usuario> _usuariosCache;
 
         public UsuarioService()
         {
-            _usuarios = new ObservableCollection<Usuario>();
-            CarregarUsuarios();
+            _context = new AppDbContext();
+            _usuariosCache = new ObservableCollection<Usuario>();
+        }
 
-            // Se não houver usuários, adiciona dados de exemplo
-            if (_usuarios.Count == 0)
+        // ==================== TESTE DE CONEXÃO ====================
+
+        public async Task<bool> TestarConexaoAsync()
+        {
+            try
             {
-                InicializarDadosExemplo();
+                await _context.Database.CanConnectAsync();
+                System.Diagnostics.Debug.WriteLine("✅ Conexão com MySQL estabelecida!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao conectar: {ex.Message}");
+                return false;
             }
         }
 
-        private void InicializarDadosExemplo()
+        // ==================== LISTAGEM COM FILTROS DE SITUAÇÃO ====================
+
+        /// <summary>
+        /// Obter TODOS os usuários (todas as situações)
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> ObterTodosUsuariosAsync()
         {
-            var usuariosExemplo = new List<Usuario>
+            try
             {
-                new Usuario
+                System.Diagnostics.Debug.WriteLine("🔄 Buscando TODOS os usuários da tabela rhdataset...");
+
+                var usuarios = await _context.Usuarios
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ {usuarios.Count} usuários encontrados");
+
+                _usuariosCache.Clear();
+                foreach (var usuario in usuarios)
                 {
-                    Nome = "Ana Silva",
-                    Email = "ana.silva@empresa.com",
-                    Cargo = "Reitor",
-                    FotoUrl = "ana_foto.jpg",
-                    UnidadeGrupo = "Unidade A"
-                },
-                new Usuario
-                {
-                    Nome = "Carlos Santos",
-                    Email = "carlos.santos@empresa.com",
-                    Cargo = "Vice-Reitor",
-                    FotoUrl = "carlos_foto.jpg",
-                    UnidadeGrupo = "Unidade B"
-                },
-                new Usuario
-                {
-                    Nome = "Maria Oliveira",
-                    Email = "maria.oliveira@empresa.com",
-                    Cargo = "Diretor",
-                    FotoUrl = "maria_foto.jpg",
-                    UnidadeGrupo = "Unidade A"
-                },
-                new Usuario
-                {
-                    Nome = "João Costa",
-                    Email = "joao.costa@empresa.com",
-                    Cargo = "Coordenador",
-                    FotoUrl = "joao_foto.jpg",
-                    UnidadeGrupo = "Grupo 1"
-                },
-                new Usuario
-                {
-                    Nome = "Fernanda Lima",
-                    Email = "fernanda.lima@empresa.com",
-                    Cargo = "Professor",
-                    FotoUrl = "fernanda_foto.jpg",
-                    UnidadeGrupo = "Grupo 2"
+                    if (string.IsNullOrEmpty(usuario.FotoUrl))
+                    {
+                        usuario.FotoUrl = ObterGravatarUrl(usuario.Email);
+                    }
+                    _usuariosCache.Add(usuario);
+
+                    System.Diagnostics.Debug.WriteLine(
+                        $"  👤 {usuario.Nome} | {usuario.StatusEmoji} {usuario.DescricaoSituacao}");
                 }
-            };
 
-            foreach (var usuario in usuariosExemplo)
-            {
-                _usuarios.Add(usuario);
+                return _usuariosCache;
             }
-
-            Task.Run(async () => await SalvarUsuarios());
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                return _usuariosCache;
+            }
         }
 
-        public ObservableCollection<Usuario> ObterTodosUsuarios()
+        /// <summary>
+        /// Obter apenas usuários TRABALHANDO
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> ObterUsuariosTrabalhando()
         {
-            return _usuarios;
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("🔄 Buscando usuários TRABALHANDO...");
+
+                var usuarios = await _context.Usuarios
+                    .Where(u => u.DescricaoSituacao == "Trabalhando")
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ {usuarios.Count} usuários trabalhando");
+
+                return CriarCollectionComFotos(usuarios);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                return new ObservableCollection<Usuario>();
+            }
         }
 
-        public Usuario? ObterUsuarioPorId(string id)
+        /// <summary>
+        /// Obter apenas usuários DEMITIDOS
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> ObterUsuariosDemitidos()
         {
-            return _usuarios.FirstOrDefault(u => u.Id == id);
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("🔄 Buscando usuários DEMITIDOS...");
+
+                var usuarios = await _context.Usuarios
+                    .Where(u => u.DescricaoSituacao == "Demitido")
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ {usuarios.Count} usuários demitidos");
+
+                return CriarCollectionComFotos(usuarios);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                return new ObservableCollection<Usuario>();
+            }
         }
+
+        /// <summary>
+        /// Obter apenas usuários em APOSENTADORIA POR INVALIDEZ
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> ObterUsuariosAposentadosPorInvalidez()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("🔄 Buscando usuários APOSENTADOS POR INVALIDEZ...");
+
+                var usuarios = await _context.Usuarios
+                    .Where(u => u.DescricaoSituacao == "Aposentadoria por Invalidez")
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ {usuarios.Count} usuários aposentados por invalidez");
+
+                return CriarCollectionComFotos(usuarios);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                return new ObservableCollection<Usuario>();
+            }
+        }
+
+        /// <summary>
+        /// Obter apenas usuários em AUXÍLIO DOENÇA
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> ObterUsuariosAuxilioDoenca()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("🔄 Buscando usuários em AUXÍLIO DOENÇA...");
+
+                var usuarios = await _context.Usuarios
+                    .Where(u => u.DescricaoSituacao == "Auxilio Doença" ||
+                               u.DescricaoSituacao == "Auxílio Doença")
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ {usuarios.Count} usuários em auxílio doença");
+
+                return CriarCollectionComFotos(usuarios);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                return new ObservableCollection<Usuario>();
+            }
+        }
+
+        /// <summary>
+        /// Filtrar usuários por situação
+        /// </summary>
+        public async Task<ObservableCollection<Usuario>> FiltrarPorSituacaoAsync(string situacao)
+        {
+            System.Diagnostics.Debug.WriteLine($"🔍 Filtrando por situação: {situacao}");
+
+            switch (situacao?.ToUpper())
+            {
+                case "TRABALHANDO":
+                    return await ObterUsuariosTrabalhando();
+
+                case "DEMITIDOS":
+                case "DEMITIDO":
+                    return await ObterUsuariosDemitidos();
+
+                case "APOSENTADORIA POR INVALIDEZ":
+                case "APOSENTADOS":
+                    return await ObterUsuariosAposentadosPorInvalidez();
+
+                case "AUXÍLIO DOENÇA":
+                case "AUXILIO DOENÇA":
+                case "AUXILIO DOENCA":
+                    return await ObterUsuariosAuxilioDoenca();
+
+                case "TODOS":
+                default:
+                    return await ObterTodosUsuariosAsync();
+            }
+        }
+
+        // ==================== OUTROS FILTROS ====================
 
         public ObservableCollection<Usuario> ObterUsuariosPorUnidade(string unidadeGrupo)
         {
             if (string.IsNullOrEmpty(unidadeGrupo) || unidadeGrupo == "Todas as Unidades")
             {
-                return _usuarios;
+                return _usuariosCache;
             }
 
-            var usuariosFiltrados = _usuarios.Where(u => u.UnidadeGrupo == unidadeGrupo).ToList();
-            return new ObservableCollection<Usuario>(usuariosFiltrados);
-        }
-
-        public async Task<bool> AdicionarUsuario(Usuario usuario)
-        {
-            try
-            {
-                _usuarios.Add(usuario);
-                await SalvarUsuarios();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Erro ao adicionar usuário: {ex.Message}");
-                return false;
-            }
-        }
-
-        public async Task<bool> AtualizarUsuario(Usuario usuario)
-        {
-            try
-            {
-                var usuarioExistente = ObterUsuarioPorId(usuario.Id);
-                if (usuarioExistente != null)
-                {
-                    int index = _usuarios.IndexOf(usuarioExistente);
-                    _usuarios[index] = usuario;
-                    await SalvarUsuarios();
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Erro ao atualizar usuário: {ex.Message}");
-                return false;
-            }
-        }
-
-        public async Task<bool> RemoverUsuario(string id)
-        {
-            try
-            {
-                var usuario = ObterUsuarioPorId(id);
-                if (usuario != null)
-                {
-                    _usuarios.Remove(usuario);
-                    await SalvarUsuarios();
-                    return true;
-                }
-                return false;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Erro ao remover usuário: {ex.Message}");
-                return false;
-            }
-        }
-
-        public List<Usuario> BuscarPorNome(string nome)
-        {
-            if (string.IsNullOrWhiteSpace(nome))
-                return _usuarios.ToList();
-
-            return _usuarios
-                .Where(u => u.Nome.Contains(nome, StringComparison.OrdinalIgnoreCase))
+            var filtrados = _usuariosCache
+                .Where(u => u.UnidadeGrupo == unidadeGrupo)
                 .ToList();
+
+            return new ObservableCollection<Usuario>(filtrados);
         }
 
-        public List<string> ObterCargosDisponiveis()
+        public async Task<ObservableCollection<Usuario>> ObterUsuariosPorCargoAsync(string cargo)
+        {
+            try
+            {
+                var usuarios = await _context.Usuarios
+                    .Where(u => u.Cargo == cargo)
+                    .OrderBy(u => u.Nome)
+                    .ToListAsync();
+
+                return CriarCollectionComFotos(usuarios);
+            }
+            catch
+            {
+                return new ObservableCollection<Usuario>();
+            }
+        }
+
+        // ==================== ESTATÍSTICAS ====================
+
+        public async Task<Dictionary<string, int>> ObterEstatisticasPorSituacaoAsync()
+        {
+            try
+            {
+                var stats = new Dictionary<string, int>();
+
+                // Total geral
+                var total = await _context.Usuarios.CountAsync();
+                stats["Total"] = total;
+
+                // Por situação específica
+                var trabalhando = await _context.Usuarios
+                    .CountAsync(u => u.DescricaoSituacao == "Trabalhando");
+                stats["Trabalhando"] = trabalhando;
+
+                var demitidos = await _context.Usuarios
+                    .CountAsync(u => u.DescricaoSituacao == "Demitido");
+                stats["Demitidos"] = demitidos;
+
+                var aposentados = await _context.Usuarios
+                    .CountAsync(u => u.DescricaoSituacao == "Aposentadoria por Invalidez");
+                stats["Aposentadoria por Invalidez"] = aposentados;
+
+                var auxilioDoenca = await _context.Usuarios
+                    .CountAsync(u => u.DescricaoSituacao == "Auxilio Doença" ||
+                                   u.DescricaoSituacao == "Auxílio Doença");
+                stats["Auxílio Doença"] = auxilioDoenca;
+
+                System.Diagnostics.Debug.WriteLine("📊 ESTATÍSTICAS:");
+                foreach (var stat in stats)
+                {
+                    System.Diagnostics.Debug.WriteLine($"  {stat.Key}: {stat.Value}");
+                }
+
+                return stats;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao obter estatísticas: {ex.Message}");
+                return new Dictionary<string, int>();
+            }
+        }
+
+        public async Task<List<string>> ObterListaCargosAsync()
+        {
+            try
+            {
+                return await _context.Usuarios
+                    .Select(u => u.Cargo)
+                    .Distinct()
+                    .OrderBy(c => c)
+                    .ToListAsync();
+            }
+            catch
+            {
+                return new List<string>();
+            }
+        }
+
+        public async Task<List<string>> ObterListaUnidadesAsync()
+        {
+            try
+            {
+                var unidades = await _context.Usuarios
+                    .Where(u => !string.IsNullOrEmpty(u.UnidadeGrupo))
+                    .Select(u => u.UnidadeGrupo!)
+                    .Distinct()
+                    .OrderBy(u => u)
+                    .ToListAsync();
+
+                unidades.Insert(0, "Todas as Unidades");
+                return unidades;
+            }
+            catch
+            {
+                return new List<string> { "Todas as Unidades" };
+            }
+        }
+
+        // ==================== MÉTODOS AUXILIARES ====================
+
+        public ObservableCollection<Usuario> ObterTodosUsuarios()
+        {
+            return _usuariosCache;
+        }
+
+        public Usuario? ObterUsuarioPorId(int id)
+        {
+            return _usuariosCache.FirstOrDefault(u => u.Id == id);
+        }
+
+        public List<string> ObterSituacoesDisponiveis()
         {
             return new List<string>
             {
-                "Reitor",
-                "Vice-Reitor",
-                "Diretor",
-                "Coordenador",
-                "Professor",
-                "Gerente",
-                "Analista",
-                "Assistente"
+                "Todos",
+                "Trabalhando",
+                "Demitidos",
+                "Aposentadoria por Invalidez",
+                "Auxílio Doença"
             };
         }
 
         public List<string> ObterUnidadesGrupos()
         {
-            return new List<string>
-            {
-                "Todas as Unidades",
-                "Unidade A",
-                "Unidade B",
-                "Unidade C",
-                "Grupo 1",
-                "Grupo 2",
-                "Grupo 3"
-            };
-        }
+            var unidades = _usuariosCache
+                .Where(u => !string.IsNullOrEmpty(u.UnidadeGrupo))
+                .Select(u => u.UnidadeGrupo!)
+                .Distinct()
+                .OrderBy(u => u)
+                .ToList();
 
-        public async Task LimparTodos()
-        {
-            _usuarios.Clear();
-            await SalvarUsuarios();
-        }
+            unidades.Insert(0, "Todas as Unidades");
 
-        private async Task SalvarUsuarios()
-        {
-            try
+            if (unidades.Count == 1)
             {
-                var json = JsonSerializer.Serialize(_usuarios.ToList());
-                await SecureStorage.SetAsync(USUARIOS_KEY, json);
+                return new List<string> { "Todas as Unidades" };
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Erro ao salvar usuários: {ex.Message}");
-            }
+
+            return unidades;
         }
 
-        private void CarregarUsuarios()
+        private ObservableCollection<Usuario> CriarCollectionComFotos(List<Usuario> usuarios)
         {
-            try
+            var result = new ObservableCollection<Usuario>();
+            foreach (var usuario in usuarios)
             {
-                var json = SecureStorage.GetAsync(USUARIOS_KEY).Result;
-                if (!string.IsNullOrEmpty(json))
+                if (string.IsNullOrEmpty(usuario.FotoUrl))
                 {
-                    var usuarios = JsonSerializer.Deserialize<List<Usuario>>(json);
-                    if (usuarios != null)
-                    {
-                        _usuarios.Clear();
-                        foreach (var usuario in usuarios)
-                        {
-                            _usuarios.Add(usuario);
-                        }
-                    }
+                    usuario.FotoUrl = ObterGravatarUrl(usuario.Email);
                 }
+                result.Add(usuario);
+            }
+            return result;
+        }
+
+        private static string ObterGravatarUrl(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+                return "https://www.gravatar.com/avatar/?d=identicon&s=200";
+
+            using var md5 = System.Security.Cryptography.MD5.Create();
+            var inputBytes = System.Text.Encoding.ASCII.GetBytes(email.Trim().ToLower());
+            var hashBytes = md5.ComputeHash(inputBytes);
+            var hash = Convert.ToHexString(hashBytes).ToLower();
+
+            return $"https://www.gravatar.com/avatar/{hash}?d=identicon&s=200";
+        }
+
+        // ==================== DIAGNÓSTICO ====================
+
+        public async Task<string> DiagnosticarBancoDadosAsync()
+        {
+            try
+            {
+                var resultado = new System.Text.StringBuilder();
+
+                bool conectado = await _context.Database.CanConnectAsync();
+                resultado.AppendLine($"Conexão: {(conectado ? "✅ OK" : "❌ FALHOU")}");
+                resultado.AppendLine($"Tabela: rhdataset");
+                resultado.AppendLine($"Coluna Situação: Descrição (Situação)");
+                resultado.AppendLine();
+
+                var total = await _context.Usuarios.CountAsync();
+                resultado.AppendLine($"Total de registros: {total}");
+                resultado.AppendLine();
+
+                var stats = await ObterEstatisticasPorSituacaoAsync();
+                resultado.AppendLine("Estatísticas por Situação:");
+                foreach (var stat in stats)
+                {
+                    resultado.AppendLine($"  • {stat.Key}: {stat.Value}");
+                }
+                resultado.AppendLine();
+
+                var primeiros = await _context.Usuarios.Take(3).ToListAsync();
+                resultado.AppendLine($"Primeiros 3 registros:");
+                foreach (var u in primeiros)
+                {
+                    resultado.AppendLine($"  {u.StatusEmoji} ID: {u.Id} | Nome: {u.Nome} | Situação: {u.DescricaoSituacao}");
+                }
+
+                return resultado.ToString();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Erro ao carregar usuários: {ex.Message}");
+                return $"❌ Erro: {ex.Message}\n\nStack: {ex.StackTrace}";
             }
         }
     }
