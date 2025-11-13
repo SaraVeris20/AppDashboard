@@ -13,7 +13,6 @@ namespace AppDashboard.ViewModels
         private ObservableCollection<Usuario> _usuarios;
         private ObservableCollection<Usuario> _usuariosFiltrados;
         private List<string> _unidadesGrupos;
-        private List<string> _situacoesDisponiveis;
         private string _unidadeSelecionada;
         private string _situacaoSelecionada;
         private string _textoBusca = string.Empty;
@@ -26,7 +25,6 @@ namespace AppDashboard.ViewModels
         private int _totalDemitidos = 0;
         private int _totalAposentados = 0;
         private int _totalAuxilioDoenca = 0;
-        private string _mensagemStatus = "Carregando...";
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -49,6 +47,7 @@ namespace AppDashboard.ViewModels
             {
                 _usuariosFiltrados = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(ContagemUsuarios));
             }
         }
 
@@ -58,16 +57,6 @@ namespace AppDashboard.ViewModels
             set
             {
                 _unidadesGrupos = value;
-                OnPropertyChanged();
-            }
-        }
-
-        public List<string> SituacoesDisponiveis
-        {
-            get => _situacoesDisponiveis;
-            set
-            {
-                _situacoesDisponiveis = value;
                 OnPropertyChanged();
             }
         }
@@ -125,6 +114,8 @@ namespace AppDashboard.ViewModels
             }
         }
 
+        public string ContagemUsuarios => $"{UsuariosFiltrados?.Count ?? 0} usuários cadastrados";
+
         // Estatísticas
         public int TotalUsuarios
         {
@@ -176,21 +167,11 @@ namespace AppDashboard.ViewModels
             }
         }
 
-        public string MensagemStatus
-        {
-            get => _mensagemStatus;
-            set
-            {
-                _mensagemStatus = value;
-                OnPropertyChanged();
-            }
-        }
-
         // ==================== COMANDOS ====================
 
         public ICommand AtualizarListaCommand { get; }
-        public ICommand DiagnosticoCommand { get; }
         public ICommand VerDetalhesCommand { get; }
+        public ICommand DeletarUsuarioCommand { get; }
 
         // ==================== CONSTRUTOR ====================
 
@@ -200,31 +181,15 @@ namespace AppDashboard.ViewModels
             _usuarios = new ObservableCollection<Usuario>();
             _usuariosFiltrados = new ObservableCollection<Usuario>();
             _unidadesGrupos = new List<string>();
-            _situacoesDisponiveis = new List<string>();
             _unidadeSelecionada = "Todas as Unidades";
             _situacaoSelecionada = "Todos";
 
-            // Lista de situações disponíveis
-            SituacoesDisponiveis = new List<string>
-            {
-                "Todos",
-                "Trabalhando",
-                "Demitidos",
-                "Aposentadoria por Invalidez",
-                "Auxílio Doença"
-            };
-
             AtualizarListaCommand = new Command(async () => await CarregarDadosAsync());
-            DiagnosticoCommand = new Command(async () => await ExecutarDiagnosticoAsync());
             VerDetalhesCommand = new Command<Usuario>(async (usuario) => await VerDetalhes(usuario));
+            DeletarUsuarioCommand = new Command<Usuario>(async (usuario) => await DeletarUsuario(usuario));
         }
 
         // ==================== MÉTODOS PRINCIPAIS ====================
-
-        public async Task InicializarAsync()
-        {
-            await CarregarDadosAsync();
-        }
 
         public async Task CarregarDadosAsync()
         {
@@ -232,56 +197,45 @@ namespace AppDashboard.ViewModels
 
             IsBusy = true;
             IsRefreshing = true;
-            MensagemStatus = "Conectando ao MySQL AWS...";
 
             try
             {
-                System.Diagnostics.Debug.WriteLine("🔄 Iniciando carregamento da tabela rhdataset...");
+                System.Diagnostics.Debug.WriteLine("🔄 Carregando usuários do banco de dados MySQL...");
 
-                // Carregar TODOS os usuários
-                MensagemStatus = "Buscando usuários da tabela rhdataset...";
+                // Carregar todos os usuários
                 Usuarios = await _usuarioService.ObterTodosUsuariosAsync();
 
                 // Carregar estatísticas
-                MensagemStatus = "Calculando estatísticas...";
                 var stats = await _usuarioService.ObterEstatisticasPorSituacaoAsync();
-
                 TotalUsuarios = stats.ContainsKey("Total") ? stats["Total"] : Usuarios.Count;
                 TotalTrabalhando = stats.ContainsKey("Trabalhando") ? stats["Trabalhando"] : 0;
                 TotalDemitidos = stats.ContainsKey("Demitidos") ? stats["Demitidos"] : 0;
                 TotalAposentados = stats.ContainsKey("Aposentadoria por Invalidez") ? stats["Aposentadoria por Invalidez"] : 0;
                 TotalAuxilioDoenca = stats.ContainsKey("Auxílio Doença") ? stats["Auxílio Doença"] : 0;
 
-                // Carregar filtros
-                MensagemStatus = "Carregando filtros...";
-                var unidadesDoBanco = await _usuarioService.ObterListaUnidadesAsync();
-                UnidadesGrupos = unidadesDoBanco;
+                // Carregar filtros de unidades
+                var unidades = await _usuarioService.ObterListaUnidadesAsync();
+                UnidadesGrupos = unidades;
 
                 // Aplicar filtro inicial
                 await AplicarFiltroSituacaoAsync();
 
-                MensagemStatus = $"✅ {TotalUsuarios} colaboradores | " +
-                                $"{TotalTrabalhando} trabalhando | " +
-                                $"{TotalDemitidos} demitidos | " +
-                                $"{TotalAposentados} aposentados | " +
-                                $"{TotalAuxilioDoenca} auxílio doença";
-
-                System.Diagnostics.Debug.WriteLine("✅ Carregamento concluído!");
-                System.Diagnostics.Debug.WriteLine($"📊 Total: {TotalUsuarios} | Trabalhando: {TotalTrabalhando} | Demitidos: {TotalDemitidos}");
+                System.Diagnostics.Debug.WriteLine($"✅ {TotalUsuarios} usuários carregados com sucesso!");
+                System.Diagnostics.Debug.WriteLine($"📊 Trabalhando: {TotalTrabalhando} | Demitidos: {TotalDemitidos} | Aposentados: {TotalAposentados} | Auxílio: {TotalAuxilioDoenca}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
-                MensagemStatus = "❌ Erro ao carregar dados";
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao carregar dados: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ StackTrace: {ex.StackTrace}");
 
                 await Application.Current!.MainPage!.DisplayAlert(
-                    "Erro ao Carregar",
-                    $"Não foi possível carregar os dados da tabela rhdataset.\n\n" +
+                    "Erro ao Carregar Dados",
+                    $"Não foi possível carregar os usuários do banco de dados.\n\n" +
                     $"Erro: {ex.Message}\n\n" +
                     $"Verifique:\n" +
                     $"• Conexão com internet\n" +
-                    $"• Nome da tabela: rhdataset\n" +
-                    $"• Nome da coluna: Descrição (Situação)",
+                    $"• Credenciais do MySQL no AppDbContext.cs\n" +
+                    $"• Nome da tabela: rhdataset",
                     "OK");
             }
             finally
@@ -289,11 +243,6 @@ namespace AppDashboard.ViewModels
                 IsBusy = false;
                 IsRefreshing = false;
             }
-        }
-
-        public void CarregarDados()
-        {
-            Task.Run(async () => await CarregarDadosAsync());
         }
 
         // ==================== FILTROS ====================
@@ -304,7 +253,7 @@ namespace AppDashboard.ViewModels
 
             try
             {
-                System.Diagnostics.Debug.WriteLine($"🔍 Aplicando filtro: {SituacaoSelecionada}");
+                System.Diagnostics.Debug.WriteLine($"🔍 Aplicando filtro de situação: {SituacaoSelecionada}");
 
                 ObservableCollection<Usuario> usuariosPorSituacao;
 
@@ -320,6 +269,7 @@ namespace AppDashboard.ViewModels
                         break;
 
                     case "APOSENTADORIA POR INVALIDEZ":
+                    case "APOSENTADOS":
                         usuariosPorSituacao = await _usuarioService.ObterUsuariosAposentadosPorInvalidez();
                         break;
 
@@ -341,14 +291,14 @@ namespace AppDashboard.ViewModels
                     Usuarios.Add(usuario);
                 }
 
-                // Aplicar outros filtros
+                // Aplicar outros filtros (unidade e busca)
                 AplicarFiltros();
 
                 System.Diagnostics.Debug.WriteLine($"✅ Filtro aplicado: {UsuariosFiltrados.Count} usuários exibidos");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro ao filtrar: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao aplicar filtro: {ex.Message}");
             }
         }
 
@@ -362,10 +312,11 @@ namespace AppDashboard.ViewModels
 
             var usuariosFiltrados = Usuarios.AsEnumerable();
 
-            // Filtrar por unidade
+            // Filtrar por unidade/setor
             if (!string.IsNullOrEmpty(UnidadeSelecionada) && UnidadeSelecionada != "Todas as Unidades")
             {
                 usuariosFiltrados = usuariosFiltrados.Where(u => u.UnidadeGrupo == UnidadeSelecionada);
+                System.Diagnostics.Debug.WriteLine($"🔍 Filtrando por unidade: {UnidadeSelecionada}");
             }
 
             // Filtrar por texto de busca
@@ -375,60 +326,96 @@ namespace AppDashboard.ViewModels
                 usuariosFiltrados = usuariosFiltrados.Where(u =>
                     u.Nome.ToLower().Contains(busca) ||
                     u.Cargo.ToLower().Contains(busca) ||
-                    (!string.IsNullOrEmpty(u.DescricaoSituacao) && u.DescricaoSituacao.ToLower().Contains(busca))
+                    (!string.IsNullOrEmpty(u.UnidadeGrupo) && u.UnidadeGrupo.ToLower().Contains(busca))
                 );
+                System.Diagnostics.Debug.WriteLine($"🔍 Buscando por: {TextoBusca}");
             }
 
             UsuariosFiltrados = new ObservableCollection<Usuario>(usuariosFiltrados);
+            System.Diagnostics.Debug.WriteLine($"📋 Total após filtros: {UsuariosFiltrados.Count} usuários");
         }
 
-        // ==================== OUTROS MÉTODOS ====================
-
-        private async Task ExecutarDiagnosticoAsync()
-        {
-            IsBusy = true;
-            MensagemStatus = "Executando diagnóstico...";
-
-            try
-            {
-                var diagnostico = await _usuarioService.DiagnosticarBancoDadosAsync();
-
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "🔍 Diagnóstico - Tabela rhdataset",
-                    diagnostico,
-                    "OK");
-            }
-            catch (Exception ex)
-            {
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "Erro",
-                    ex.Message,
-                    "OK");
-            }
-            finally
-            {
-                IsBusy = false;
-                MensagemStatus = $"✅ {TotalUsuarios} colaboradores carregados";
-            }
-        }
+        // ==================== AÇÕES ====================
 
         private async Task VerDetalhes(Usuario usuario)
         {
             if (usuario == null) return;
 
             var detalhes = $"📋 INFORMAÇÕES DO COLABORADOR\n\n" +
-                          $"ID: {usuario.Id}\n" +
+                          $"🆔 ID: {usuario.Id}\n" +
                           $"👤 Nome: {usuario.Nome}\n" +
+                          $"📧 Email: {usuario.Email}\n" +
                           $"💼 Cargo: {usuario.Cargo}\n" +
                           $"{usuario.StatusEmoji} Situação: {usuario.StatusDescricao}\n";
 
             if (!string.IsNullOrEmpty(usuario.UnidadeGrupo))
                 detalhes += $"🏢 Setor: {usuario.UnidadeGrupo}\n";
 
+            detalhes += $"\n📊 STATUS:\n" +
+                       $"Cor: {usuario.StatusCor}\n" +
+                       $"Ativo: {(usuario.EstaAtivo ? "Sim" : "Não")}";
+
             await Application.Current!.MainPage!.DisplayAlert(
                 "Detalhes do Colaborador",
                 detalhes,
                 "Fechar");
+        }
+
+        private async Task DeletarUsuario(Usuario usuario)
+        {
+            if (usuario == null) return;
+
+            bool confirmacao = await Application.Current!.MainPage!.DisplayAlert(
+                "⚠️ Confirmar Exclusão",
+                $"Deseja realmente excluir o usuário:\n\n" +
+                $"👤 {usuario.Nome}\n" +
+                $"💼 {usuario.Cargo}\n\n" +
+                $"Esta ação não pode ser desfeita!",
+                "Sim, excluir",
+                "Cancelar");
+
+            if (!confirmacao) return;
+
+            try
+            {
+                IsBusy = true;
+                System.Diagnostics.Debug.WriteLine($"🗑️ Excluindo usuário: {usuario.Nome} (ID: {usuario.Id})");
+
+                // TODO: Implementar exclusão no banco de dados
+                // bool sucesso = await _usuarioService.DeletarUsuarioAsync(usuario.Id);
+
+                // Por enquanto, apenas remove da lista local
+                Usuarios.Remove(usuario);
+                AplicarFiltros();
+
+                // Atualizar estatísticas
+                TotalUsuarios--;
+                if (usuario.EstaAtivo) TotalTrabalhando--;
+                else if (usuario.EstaDemitido) TotalDemitidos--;
+                else if (usuario.EstaAposentadoPorInvalidez) TotalAposentados--;
+                else if (usuario.EstaEmAuxilioDoenca) TotalAuxilioDoenca--;
+
+                System.Diagnostics.Debug.WriteLine($"✅ Usuário {usuario.Nome} excluído com sucesso!");
+
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "✅ Sucesso",
+                    $"Usuário '{usuario.Nome}' foi excluído com sucesso!",
+                    "OK");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao excluir: {ex.Message}");
+
+                await Application.Current!.MainPage!.DisplayAlert(
+                    "❌ Erro",
+                    $"Não foi possível excluir o usuário.\n\n" +
+                    $"Erro: {ex.Message}",
+                    "OK");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

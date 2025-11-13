@@ -1,7 +1,6 @@
 ﻿using AppDashboard.Data;
 using AppDashboard.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.ObjectModel;
 
 namespace AppDashboard.Services
@@ -56,7 +55,7 @@ namespace AppDashboard.Services
                 {
                     if (string.IsNullOrEmpty(usuario.FotoUrl))
                     {
-                        usuario.FotoUrl = ObterGravatarUrl(usuario.Email);
+                        usuario.FotoUrl = ObterGravatarPadrao();
                     }
                     _usuariosCache.Add(usuario);
 
@@ -69,6 +68,7 @@ namespace AppDashboard.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"❌ StackTrace: {ex.StackTrace}");
                 return _usuariosCache;
             }
         }
@@ -369,24 +369,64 @@ namespace AppDashboard.Services
             {
                 if (string.IsNullOrEmpty(usuario.FotoUrl))
                 {
-                    usuario.FotoUrl = ObterGravatarUrl(usuario.Email);
+                    usuario.FotoUrl = ObterGravatarPadrao();
                 }
                 result.Add(usuario);
             }
             return result;
         }
 
-        private static string ObterGravatarUrl(string email)
+        private static string ObterGravatarPadrao()
         {
-            if (string.IsNullOrEmpty(email))
-                return "https://www.gravatar.com/avatar/?d=identicon&s=200";
+            return "https://www.gravatar.com/avatar/?d=identicon&s=200";
+        }
 
-            using var md5 = System.Security.Cryptography.MD5.Create();
-            var inputBytes = System.Text.Encoding.ASCII.GetBytes(email.Trim().ToLower());
-            var hashBytes = md5.ComputeHash(inputBytes);
-            var hash = Convert.ToHexString(hashBytes).ToLower();
+        // ==================== ADICIONAR USUÁRIO ====================
 
-            return $"https://www.gravatar.com/avatar/{hash}?d=identicon&s=200";
+        public async Task<bool> AdicionarUsuario(Usuario usuario)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"➕ Adicionando usuário: {usuario.Nome}");
+
+                _context.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
+
+                System.Diagnostics.Debug.WriteLine($"✅ Usuário {usuario.Nome} adicionado com sucesso!");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Erro ao adicionar usuário: {ex.Message}");
+                return false;
+            }
+        }
+
+        public List<string> ObterCargosDisponiveis()
+        {
+            var cargos = _usuariosCache
+                .Select(u => u.Cargo)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToList();
+
+            if (cargos.Count == 0)
+            {
+                // Lista padrão de cargos caso o cache esteja vazio
+                return new List<string>
+                {
+                    "Analista",
+                    "Assistente",
+                    "Coordenador",
+                    "Desenvolvedor",
+                    "Diretor",
+                    "Gerente",
+                    "Supervisor",
+                    "Técnico"
+                };
+            }
+
+            return cargos;
         }
 
         // ==================== DIAGNÓSTICO ====================
@@ -399,6 +439,7 @@ namespace AppDashboard.Services
 
                 bool conectado = await _context.Database.CanConnectAsync();
                 resultado.AppendLine($"Conexão: {(conectado ? "✅ OK" : "❌ FALHOU")}");
+                resultado.AppendLine($"Banco: rhsenior_heicomp");
                 resultado.AppendLine($"Tabela: rhdataset");
                 resultado.AppendLine($"Coluna Situação: Descrição (Situação)");
                 resultado.AppendLine();

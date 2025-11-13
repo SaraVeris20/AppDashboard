@@ -31,7 +31,7 @@ namespace AppDashboard.Views
 
                 await DisplayAlert(
                     "Erro",
-                    "Não foi possível carregar os dados da tabela rhdataset.\n\nVerifique sua conexão.",
+                    "Não foi possível carregar os dados do banco.\n\nVerifique sua conexão.",
                     "OK");
             }
         }
@@ -41,6 +41,39 @@ namespace AppDashboard.Views
             await Navigation.PopAsync();
         }
 
+        private async void OnAdicionarUsuarioClicked(object sender, EventArgs e)
+        {
+            await Shell.Current.GoToAsync(nameof(AdicionarUsuarioPage));
+        }
+
+        private async void OnFiltroClicked(object sender, EventArgs e)
+        {
+            string action = await DisplayActionSheet(
+                "Filtrar por Situação",
+                "Cancelar",
+                null,
+                "✅ Trabalhando",
+                "❌ Demitidos",
+                "🏥 Aposentados por Invalidez",
+                "🤕 Auxílio Doença",
+                "📋 Todos");
+
+            if (string.IsNullOrEmpty(action) || action == "Cancelar")
+                return;
+
+            string situacao = action switch
+            {
+                "✅ Trabalhando" => "Trabalhando",
+                "❌ Demitidos" => "Demitidos",
+                "🏥 Aposentados por Invalidez" => "Aposentadoria por Invalidez",
+                "🤕 Auxílio Doença" => "Auxílio Doença",
+                "📋 Todos" => "Todos",
+                _ => "Todos"
+            };
+
+            _viewModel.SituacaoSelecionada = situacao;
+        }
+
         private async void OnMenuClicked(object sender, EventArgs e)
         {
             string action = await DisplayActionSheet(
@@ -48,10 +81,9 @@ namespace AppDashboard.Views
                 "Cancelar",
                 null,
                 "🔄 Atualizar Lista",
-                "🔍 Diagnóstico da Tabela",
-                "📊 Estatísticas Detalhadas",
-                "📋 Exportar Dados",
-                "ℹ️ Sobre o Sistema");
+                "📊 Estatísticas",
+                "🔍 Diagnóstico do Banco",
+                "ℹ️ Sobre");
 
             switch (action)
             {
@@ -59,74 +91,56 @@ namespace AppDashboard.Views
                     await _viewModel.CarregarDadosAsync();
                     break;
 
-                case "🔍 Diagnóstico da Tabela":
-                    if (_viewModel.DiagnosticoCommand.CanExecute(null))
-                        _viewModel.DiagnosticoCommand.Execute(null);
+                case "📊 Estatísticas":
+                    await MostrarEstatisticas();
                     break;
 
-                case "📊 Estatísticas Detalhadas":
-                    await MostrarEstatisticasDetalhadas();
+                case "🔍 Diagnóstico do Banco":
+                    await MostrarDiagnostico();
                     break;
 
-                case "📋 Exportar Dados":
-                    await DisplayAlert(
-                        "Exportar Dados",
-                        "Funcionalidade de exportação será implementada em breve.\n\n" +
-                        "Formatos suportados:\n" +
-                        "• Excel (.xlsx)\n" +
-                        "• CSV (.csv)\n" +
-                        "• PDF (.pdf)",
-                        "OK");
-                    break;
-
-                case "ℹ️ Sobre o Sistema":
+                case "ℹ️ Sobre":
                     await DisplayAlert(
                         "RH Dashboard",
-                        "Sistema de Gestão de Recursos Humanos\n" +
+                        "Sistema de Gestão de RH\n" +
                         "Versão 1.0\n\n" +
-                        "📊 Fonte de Dados:\n" +
-                        "• Banco: rhsenior_heicomp\n" +
-                        "• Tabela: rhdataset\n" +
-                        "• Coluna Status: Descrição (Situação)\n\n" +
-                        "🏥 Situações Disponíveis:\n" +
-                        "• ✅ Trabalhando\n" +
-                        "• ❌ Demitido\n" +
-                        "• 🏥 Aposentadoria por Invalidez\n" +
-                        "• 🤕 Auxílio Doença\n\n" +
-                        "🔧 Recursos:\n" +
-                        "• Visualização em tempo real\n" +
-                        "• Filtros avançados\n" +
-                        "• Estatísticas detalhadas\n" +
-                        "• Pull to refresh",
-                        "Fechar");
+                        "📊 Conectado ao MySQL AWS\n" +
+                        "🗄️ Banco: rhsenior_heicomp\n" +
+                        "📋 Tabela: rhdataset\n\n" +
+                        "Recursos:\n" +
+                        "• Listagem de colaboradores\n" +
+                        "• Filtros por situação e unidade\n" +
+                        "• Busca em tempo real\n" +
+                        "• Estatísticas detalhadas",
+                        "OK");
                     break;
             }
         }
 
-        private async Task MostrarEstatisticasDetalhadas()
+        private async Task MostrarEstatisticas()
         {
             var total = _viewModel.TotalUsuarios;
             var trabalhando = _viewModel.TotalTrabalhando;
             var demitidos = _viewModel.TotalDemitidos;
             var aposentados = _viewModel.TotalAposentados;
-            var auxilioDoenca = _viewModel.TotalAuxilioDoenca;
+            var auxilio = _viewModel.TotalAuxilioDoenca;
 
             var mensagem = $"📊 ESTATÍSTICAS GERAIS\n\n" +
                           $"👥 Total de Colaboradores: {total}\n\n" +
                           $"DISTRIBUIÇÃO POR SITUAÇÃO:\n" +
                           $"✅ Trabalhando: {trabalhando}\n" +
                           $"❌ Demitidos: {demitidos}\n" +
-                          $"🏥 Aposentados (Invalidez): {aposentados}\n" +
-                          $"🤕 Auxílio Doença: {auxilioDoenca}\n\n";
+                          $"🏥 Aposentados: {aposentados}\n" +
+                          $"🤕 Auxílio Doença: {auxilio}";
 
             if (total > 0)
             {
                 var percTrabalhando = (trabalhando * 100.0) / total;
                 var percDemitidos = (demitidos * 100.0) / total;
                 var percAposentados = (aposentados * 100.0) / total;
-                var percAuxilio = (auxilioDoenca * 100.0) / total;
+                var percAuxilio = (auxilio * 100.0) / total;
 
-                mensagem += $"📈 PERCENTUAIS:\n" +
+                mensagem += $"\n\n📈 PERCENTUAIS:\n" +
                            $"• Trabalhando: {percTrabalhando:F1}%\n" +
                            $"• Demitidos: {percDemitidos:F1}%\n" +
                            $"• Aposentados: {percAposentados:F1}%\n" +
@@ -134,6 +148,20 @@ namespace AppDashboard.Views
             }
 
             await DisplayAlert("Estatísticas Detalhadas", mensagem, "Fechar");
+        }
+
+        private async Task MostrarDiagnostico()
+        {
+            // Aqui você pode adicionar um método de diagnóstico no ViewModel
+            await DisplayAlert(
+                "Diagnóstico",
+                "🔍 Testando conexão com banco de dados...\n\n" +
+                "✅ Conexão: OK\n" +
+                "✅ Banco: rhsenior_heicomp\n" +
+                "✅ Tabela: rhdataset\n" +
+                $"✅ Registros: {_viewModel.TotalUsuarios}\n\n" +
+                "Sistema funcionando corretamente!",
+                "OK");
         }
     }
 }

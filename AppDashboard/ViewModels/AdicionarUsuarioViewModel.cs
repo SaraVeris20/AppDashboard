@@ -130,7 +130,6 @@ namespace AppDashboard.ViewModels
             var novoUsuario = new Usuario
             {
                 Nome = Nome.Trim(),
-                Email = Email.Trim().ToLower(),
                 Cargo = CargoSelecionado,
                 UnidadeGrupo = UnidadeGrupoSelecionada,
                 FotoUrl = "default_avatar.png"

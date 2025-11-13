@@ -6,28 +6,38 @@ namespace AppDashboard.Models
     [Table("rhdataset")]
     public class Usuario
     {
-
         [Key]
         [Column("cadastro")]
         public int Id { get; set; }
 
         [Column("nome")]
+        [Required]
+        [MaxLength(200)]
         public string Nome { get; set; } = string.Empty;
 
-
         [Column("cargo")]
+        [Required]
+        [MaxLength(100)]
         public string Cargo { get; set; } = string.Empty;
 
         [Column("Descrição (Situação)")]
+        [MaxLength(100)]
         public string? DescricaoSituacao { get; set; }
 
-        [Column("Descrição (C.Custo)")] 
+        [Column("Descrição (C.Custo)")]
+        [MaxLength(200)]
         public string? UnidadeGrupo { get; set; }
 
         [Column("foto_url")]
+        [MaxLength(500)]
         public string? FotoUrl { get; set; }
 
-      
+        // Para exibir email fictício na interface
+        [NotMapped]
+        public string Email => $"{Nome.ToLower().Replace(" ", ".")}@empresa.com";
+
+        // ==================== PROPRIEDADES CALCULADAS (NotMapped) ====================
+
         [NotMapped]
         public bool EstaAtivo
         {
@@ -120,10 +130,10 @@ namespace AppDashboard.Models
         {
             get
             {
-                if (EstaAtivo) return "#E8F5E9"; 
-                if (EstaDemitido) return "#FFEBEE"; 
+                if (EstaAtivo) return "#E8F5E9";
+                if (EstaDemitido) return "#FFEBEE";
                 if (EstaAposentadoPorInvalidez) return "#F3E5F5";
-                if (EstaEmAuxilioDoenca) return "#FFF3E0"; 
+                if (EstaEmAuxilioDoenca) return "#FFF3E0";
                 return "#F5F5F5";
             }
         }

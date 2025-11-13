@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="AppDashboard.Views.AreaAdministrativaPage"
              BackgroundColor="#F5F5F5"
-             Title="RH Dashboard">
+             Shell.NavBarIsVisible="False">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,368 +17,297 @@
         <!-- ============================================ -->
         <Grid Grid.Row="0" BackgroundColor="#2E4A8B" Padding="16,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="50"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="40"/>
+                <ColumnDefinition Width="50"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0"
-                    Text="←"
-                    FontSize="24"
-                    TextColor="White"
-                    BackgroundColor="Transparent"
-                    WidthRequest="40"
-                    HeightRequest="40"
-                    VerticalOptions="Center"
-                    Clicked="OnBackClicked"/>
+            <ImageButton Grid.Column="0"
+                        Aspect="Center" 
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        BackgroundColor="Transparent"
+                        VerticalOptions="Center"
+                        Clicked="OnBackClicked">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        Glyph="←" 
+                        FontFamily="Arial"
+                        Size="28" 
+                        Color="White"/>
+                </ImageButton.Source>
+            </ImageButton>
 
             <Label Grid.Column="1"
-                   Text="RH Dashboard"
+                   Text="Área Administrativa"
                    FontSize="20"
                    FontAttributes="Bold"
                    TextColor="White"
                    VerticalOptions="Center"
                    HorizontalOptions="Start"/>
 
-            <Button Grid.Column="2"
-                    Text="⋮"
-                    FontSize="24"
-                    TextColor="White"
-                    BackgroundColor="Transparent"
-                    WidthRequest="40"
-                    HeightRequest="40"
-                    VerticalOptions="Center"
-                    Clicked="OnMenuClicked"/>
+            <ImageButton Grid.Column="2"
+                        Aspect="Center" 
+                        WidthRequest="24"
+                        HeightRequest="24"
+                        BackgroundColor="Transparent"
+                        VerticalOptions="Center"
+                        Clicked="OnMenuClicked">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        Glyph="⋮" 
+                        FontFamily="Arial"
+                        Size="28" 
+                        Color="White"/>
+                </ImageButton.Source>
+            </ImageButton>
         </Grid>
 
         <!-- ============================================ -->
-        <!-- ESTATÍSTICAS (4 CARDS) -->
+        <!-- FILTROS E BUSCA -->
         <!-- ============================================ -->
-        <ScrollView Grid.Row="1" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
-            <Border StrokeThickness="0"
-                    BackgroundColor="#2E4A8B"
-                    Padding="16,0,16,16">
-                <HorizontalStackLayout Spacing="8">
+        <VerticalStackLayout Grid.Row="1" 
+                            Padding="16,16,16,8" 
+                            Spacing="12"
+                            BackgroundColor="White">
 
-                    <!-- Trabalhando -->
-                    <Border StrokeThickness="1"
-                            Stroke="#4CAF5030"
-                            BackgroundColor="#4CAF5015"
-                            Padding="16,12"
-                            WidthRequest="140"
-                            StrokeShape="RoundRectangle 12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="✅ Trabalhando"
-                                   FontSize="11"
-                                   TextColor="#E8F5E9"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding TotalTrabalhando}"
-                                   FontSize="28"
-                                   FontAttributes="Bold"
-                                   TextColor="#4CAF50"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Demitidos -->
-                    <Border StrokeThickness="1"
-                            Stroke="#F4433630"
-                            BackgroundColor="#F4433615"
-                            Padding="16,12"
-                            WidthRequest="140"
-                            StrokeShape="RoundRectangle 12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="❌ Demitidos"
-                                   FontSize="11"
-                                   TextColor="#FFEBEE"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding TotalDemitidos}"
-                                   FontSize="28"
-                                   FontAttributes="Bold"
-                                   TextColor="#F44336"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Aposentados -->
-                    <Border StrokeThickness="1"
-                            Stroke="#9C27B030"
-                            BackgroundColor="#9C27B015"
-                            Padding="16,12"
-                            WidthRequest="140"
-                            StrokeShape="RoundRectangle 12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="🏥 Aposentados"
-                                   FontSize="11"
-                                   TextColor="#F3E5F5"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding TotalAposentados}"
-                                   FontSize="28"
-                                   FontAttributes="Bold"
-                                   TextColor="#9C27B0"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Auxílio Doença -->
-                    <Border StrokeThickness="1"
-                            Stroke="#FF980030"
-                            BackgroundColor="#FF980015"
-                            Padding="16,12"
-                            WidthRequest="140"
-                            StrokeShape="RoundRectangle 12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="🤕 Auxílio Doença"
-                                   FontSize="11"
-                                   TextColor="#FFF3E0"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding TotalAuxilioDoenca}"
-                                   FontSize="28"
-                                   FontAttributes="Bold"
-                                   TextColor="#FF9800"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <!-- Total -->
-                    <Border StrokeThickness="1"
-                            Stroke="#FFFFFF30"
-                            BackgroundColor="#FFFFFF15"
-                            Padding="16,12"
-                            WidthRequest="140"
-                            StrokeShape="RoundRectangle 12">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="👥 Total"
-                                   FontSize="11"
-                                   TextColor="#FFFFFFA0"
-                                   HorizontalOptions="Center"/>
-                            <Label Text="{Binding TotalUsuarios}"
-                                   FontSize="28"
-                                   FontAttributes="Bold"
-                                   TextColor="White"
-                                   HorizontalOptions="Center"/>
-                        </VerticalStackLayout>
-                    </Border>
-
-                </HorizontalStackLayout>
+            <!-- Filtro por Unidade/Setor -->
+            <Border StrokeThickness="1"
+                    Stroke="#E0E0E0"
+                    BackgroundColor="White"
+                    Padding="12,8"
+                    StrokeShape="RoundRectangle 8">
+                <Picker ItemsSource="{Binding UnidadesGrupos}"
+                        SelectedItem="{Binding UnidadeSelecionada}"
+                        Title="Todas as Unidades"
+                        TitleColor="#999999"
+                        TextColor="#333333"
+                        FontSize="16"/>
             </Border>
-        </ScrollView>
+
+            <!-- Barra de Busca com Filtro de Situação -->
+            <Grid ColumnDefinitions="*,60" ColumnSpacing="8">
+                <!-- Campo de Busca -->
+                <Border Grid.Column="0"
+                        StrokeThickness="1"
+                        Stroke="#E0E0E0"
+                        BackgroundColor="White"
+                        Padding="12,8"
+                        StrokeShape="RoundRectangle 8">
+                    <Entry Text="{Binding TextoBusca}"
+                           Placeholder="Buscar usuário..."
+                           PlaceholderColor="#999999"
+                           TextColor="#333333"
+                           FontSize="16"
+                           VerticalOptions="Center"/>
+                </Border>
+
+                <!-- Botão de Filtro (Dropdown) -->
+                <Border Grid.Column="1"
+                        StrokeThickness="1"
+                        Stroke="#2E4A8B"
+                        BackgroundColor="#2E4A8B"
+                        Padding="0"
+                        StrokeShape="RoundRectangle 8">
+                    <ImageButton Aspect="Center" 
+                                WidthRequest="30"
+                                HeightRequest="30"
+                                BackgroundColor="Transparent"
+                                Clicked="OnFiltroClicked">
+                        <ImageButton.Source>
+                            <FontImageSource 
+                                Glyph="▼" 
+                                FontFamily="Arial"
+                                Size="20" 
+                                Color="White"/>
+                        </ImageButton.Source>
+                    </ImageButton>
+                </Border>
+            </Grid>
+
+            <!-- Contador de Usuários -->
+            <Label Text="{Binding ContagemUsuarios}"
+                   FontSize="14"
+                   TextColor="#666666"
+                   HorizontalOptions="Center"
+                   Margin="0,4,0,0"/>
+        </VerticalStackLayout>
 
         <!-- ============================================ -->
-        <!-- CONTEÚDO -->
+        <!-- LISTA DE USUÁRIOS -->
         <!-- ============================================ -->
         <RefreshView Grid.Row="2"
                      IsRefreshing="{Binding IsRefreshing}"
-                     Command="{Binding AtualizarListaCommand}">
-            <ScrollView>
-                <VerticalStackLayout Spacing="16" Padding="16">
+                     Command="{Binding AtualizarListaCommand}"
+                     RefreshColor="#2E4A8B">
 
-                    <!-- Status do Sistema -->
-                    <Border StrokeThickness="1"
-                            Stroke="#4CAF50"
-                            BackgroundColor="#E8F5E9"
-                            Padding="12"
-                            StrokeShape="RoundRectangle 8">
-                        <VerticalStackLayout Spacing="4">
-                            <HorizontalStackLayout Spacing="8">
-                                <Label Text="🌐"
-                                       FontSize="20"
-                                       VerticalOptions="Center"/>
-                                <Label Text="MySQL AWS | Tabela: rhdataset"
-                                       FontSize="14"
-                                       FontAttributes="Bold"
-                                       TextColor="#2E7D32"
-                                       VerticalOptions="Center"/>
-                            </HorizontalStackLayout>
-                            <Label Text="{Binding MensagemStatus}"
-                                   FontSize="12"
-                                   TextColor="#4CAF50"
-                                   Margin="28,0,0,0"/>
-                        </VerticalStackLayout>
-                    </Border>
+            <CollectionView ItemsSource="{Binding UsuariosFiltrados}"
+                           SelectionMode="None"
+                           BackgroundColor="#F5F5F5">
 
-                    <!-- ============================================ -->
-                    <!-- FILTROS -->
-                    <!-- ============================================ -->
-                    <VerticalStackLayout Spacing="12">
-                        <Label Text="🔍 Filtros"
-                               FontSize="16"
-                               FontAttributes="Bold"
-                               TextColor="#333333"/>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border StrokeThickness="0"
+                               BackgroundColor="White"
+                               Padding="16"
+                               Margin="0,0,0,1">
 
-                        <!-- Filtro de Situação -->
-                        <Border StrokeThickness="1"
-                                Stroke="#E0E0E0"
-                                BackgroundColor="White"
-                                Padding="12"
-                                StrokeShape="RoundRectangle 8">
-                            <VerticalStackLayout Spacing="8">
-                                <Label Text="Situação do Colaborador"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="#666666"/>
-                                <Picker ItemsSource="{Binding SituacoesDisponiveis}"
-                                        SelectedItem="{Binding SituacaoSelecionada}"
-                                        Title="Selecione a situação"
-                                        TitleColor="#AAAAAA"
-                                        TextColor="#333333"
-                                        FontSize="16"
-                                        BackgroundColor="Transparent"/>
-                            </VerticalStackLayout>
-                        </Border>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
 
-                        <!-- Filtro de Unidade/Setor -->
-                        <Border StrokeThickness="1"
-                                Stroke="#E0E0E0"
-                                BackgroundColor="White"
-                                Padding="12"
-                                StrokeShape="RoundRectangle 8">
-                            <VerticalStackLayout Spacing="8">
-                                <Label Text="Setor/Unidade"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="#666666"/>
-                                <Picker ItemsSource="{Binding UnidadesGrupos}"
-                                        SelectedItem="{Binding UnidadeSelecionada}"
-                                        Title="Selecione o setor"
-                                        TitleColor="#AAAAAA"
-                                        TextColor="#333333"
-                                        FontSize="16"
-                                        BackgroundColor="Transparent"/>
-                            </VerticalStackLayout>
-                        </Border>
+                                <!-- Informações do Usuário -->
+                                <VerticalStackLayout Grid.Column="0" 
+                                                    Spacing="6" 
+                                                    VerticalOptions="Center">
 
-                        <!-- Busca por texto -->
-                        <Border StrokeThickness="1"
-                                Stroke="#E0E0E0"
-                                BackgroundColor="White"
-                                Padding="12"
-                                StrokeShape="RoundRectangle 8">
-                            <VerticalStackLayout Spacing="8">
-                                <Label Text="Buscar colaborador"
-                                       FontSize="13"
-                                       FontAttributes="Bold"
-                                       TextColor="#666666"/>
-                                <Entry Text="{Binding TextoBusca}"
-                                       Placeholder="Digite nome, email ou cargo..."
-                                       PlaceholderColor="#AAAAAA"
-                                       TextColor="#333333"
-                                       FontSize="16"
-                                       BackgroundColor="Transparent"/>
-                            </VerticalStackLayout>
-                        </Border>
-                    </VerticalStackLayout>
-
-                    <!-- Indicador de carregamento -->
-                    <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                     IsVisible="{Binding IsBusy}"
-                                     Color="#2E4A8B"
-                                     HeightRequest="40"/>
-
-                    <!-- ============================================ -->
-                    <!-- LISTA DE USUÁRIOS -->
-                    <!-- ============================================ -->
-                    <CollectionView ItemsSource="{Binding UsuariosFiltrados}"
-                                   SelectionMode="None">
-                        <CollectionView.ItemTemplate>
-                            <DataTemplate>
-                                <Border StrokeThickness="1"
-                                       Stroke="#E0E0E0"
-                                       BackgroundColor="White"
-                                       Padding="16"
-                                       Margin="0,0,0,12"
-                                       StrokeShape="RoundRectangle 12">
-                                    <Grid ColumnDefinitions="*,60" ColumnSpacing="12">
-
-                                        <!-- Informações -->
-                                        <VerticalStackLayout Grid.Column="0" Spacing="6" VerticalOptions="Center">
-                                            <HorizontalStackLayout Spacing="8">
-                                                <Label Text="{Binding Nome}"
-                                                       FontSize="16"
-                                                       FontAttributes="Bold"
-                                                       TextColor="#333333"
-                                                       VerticalOptions="Center"/>
-                                                <Label Text="{Binding StatusEmoji}"
-                                                       FontSize="18"
-                                                       VerticalOptions="Center"/>
-                                            </HorizontalStackLayout>
-
-                                            <Label Text="{Binding Email}"
-                                                   FontSize="14"
-                                                   TextColor="#666666"/>
-
-                                            <Label Text="{Binding Cargo}"
-                                                   FontSize="13"
-                                                   TextColor="#999999"/>
-
-                                            <!-- Badge de Situação com cor dinâmica -->
-                                            <Frame Padding="8,4"
-                                                   CornerRadius="6"
-                                                   HasShadow="False"
-                                                   BackgroundColor="{Binding StatusCorFundo}"
-                                                   BorderColor="{Binding StatusCor}"
-                                                   HorizontalOptions="Start">
-                                                <Label Text="{Binding StatusDescricao}"
-                                                       FontSize="11"
-                                                       FontAttributes="Bold"
-                                                       TextColor="{Binding StatusCor}"/>
-                                            </Frame>
-
-                                            <Label Text="{Binding DataCriacao, StringFormat='📅 Admissão: {0:dd/MM/yyyy}'}"
-                                                   FontSize="11"
-                                                   TextColor="#AAAAAA"
-                                                   IsVisible="{Binding DataCriacao, Converter={StaticResource IsNotNullConverter}}"/>
-                                        </VerticalStackLayout>
-
-                                        <!-- Foto -->
-                                        <Border Grid.Column="1"
-                                               StrokeThickness="2"
-                                               Stroke="#2E4A8B"
-                                               BackgroundColor="#E0E0E0"
-                                               WidthRequest="50"
-                                               HeightRequest="50"
-                                               StrokeShape="RoundRectangle 25"
-                                               VerticalOptions="Center">
-                                            <Image Source="{Binding FotoUrl}"
-                                                  Aspect="AspectFill"/>
-                                        </Border>
-                                    </Grid>
-
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalhesCommand}"
-                                                            CommandParameter="{Binding .}"/>
-                                    </Border.GestureRecognizers>
-                                </Border>
-                            </DataTemplate>
-                        </CollectionView.ItemTemplate>
-
-                        <CollectionView.EmptyView>
-                            <ContentView>
-                                <VerticalStackLayout HorizontalOptions="Center"
-                                                   VerticalOptions="Center"
-                                                   Padding="20"
-                                                   Spacing="10">
-                                    <Label Text="📋"
-                                           FontSize="48"
-                                           HorizontalOptions="Center"/>
-                                    <Label Text="Nenhum colaborador encontrado"
-                                           FontSize="16"
+                                    <!-- Nome -->
+                                    <Label Text="{Binding Nome}"
+                                           FontSize="18"
                                            FontAttributes="Bold"
-                                           TextColor="#999999"
-                                           HorizontalOptions="Center"/>
-                                    <Label Text="Ajuste os filtros ou atualize a lista"
-                                           FontSize="14"
-                                           TextColor="#CCCCCC"
-                                           HorizontalOptions="Center"
-                                           HorizontalTextAlignment="Center"
-                                           Margin="0,8,0,0"/>
-                                </VerticalStackLayout>
-                            </ContentView>
-                        </CollectionView.EmptyView>
-                    </CollectionView>
+                                           TextColor="#333333"/>
 
-                </VerticalStackLayout>
-            </ScrollView>
+                                    <!-- Email -->
+                                    <Label Text="{Binding Email}"
+                                           FontSize="14"
+                                           TextColor="#666666"
+                                           IsVisible="{Binding Email, Converter={StaticResource IsNotNullConverter}}"/>
+
+                                    <!-- Cargo e Unidade -->
+                                    <HorizontalStackLayout Spacing="12">
+                                        <Border BackgroundColor="#E3F2FD"
+                                               Padding="8,4"
+                                               StrokeThickness="0"
+                                               StrokeShape="RoundRectangle 4">
+                                            <Label Text="{Binding Cargo}"
+                                                   FontSize="12"
+                                                   TextColor="#1976D2"/>
+                                        </Border>
+
+                                        <Border BackgroundColor="#F3E5F5"
+                                               Padding="8,4"
+                                               StrokeThickness="0"
+                                               StrokeShape="RoundRectangle 4"
+                                               IsVisible="{Binding UnidadeGrupo, Converter={StaticResource IsNotNullConverter}}">
+                                            <Label Text="{Binding UnidadeGrupo}"
+                                                   FontSize="12"
+                                                   TextColor="#7B1FA2"/>
+                                        </Border>
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
+
+                                <!-- Foto e Botão Deletar -->
+                                <HorizontalStackLayout Grid.Column="1" 
+                                                      Spacing="8"
+                                                      VerticalOptions="Center">
+
+                                    <!-- Foto do Usuário -->
+                                    <Border StrokeThickness="0"
+                                           BackgroundColor="#2E4A8B"
+                                           WidthRequest="50"
+                                           HeightRequest="50"
+                                           StrokeShape="RoundRectangle 25">
+                                        <Image Source="{Binding FotoUrl}"
+                                              Aspect="AspectFill"/>
+                                    </Border>
+
+                                    <!-- Botão Deletar -->
+                                    <Border StrokeThickness="0"
+                                           BackgroundColor="#E53935"
+                                           WidthRequest="50"
+                                           HeightRequest="50"
+                                           StrokeShape="RoundRectangle 25">
+                                        <ImageButton Aspect="Center" 
+                                                    WidthRequest="24"
+                                                    HeightRequest="24"
+                                                    BackgroundColor="Transparent"
+                                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.DeletarUsuarioCommand}"
+                                                    CommandParameter="{Binding .}">
+                                            <ImageButton.Source>
+                                                <FontImageSource 
+                                                    Glyph="🗑" 
+                                                    FontFamily="Arial"
+                                                    Size="24" 
+                                                    Color="White"/>
+                                            </ImageButton.Source>
+                                        </ImageButton>
+                                    </Border>
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <!-- Tap Gesture para Ver Detalhes -->
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.VerDetalhesCommand}"
+                                                    CommandParameter="{Binding .}"/>
+                            </Border.GestureRecognizers>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <!-- Empty View -->
+                <CollectionView.EmptyView>
+                    <ContentView>
+                        <VerticalStackLayout HorizontalOptions="Center"
+                                           VerticalOptions="Center"
+                                           Padding="40"
+                                           Spacing="16">
+                            <Label Text="📋"
+                                   FontSize="64"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="Nenhum usuário encontrado"
+                                   FontSize="18"
+                                   FontAttributes="Bold"
+                                   TextColor="#999999"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="Ajuste os filtros ou adicione novos usuários"
+                                   FontSize="14"
+                                   TextColor="#CCCCCC"
+                                   HorizontalOptions="Center"
+                                   HorizontalTextAlignment="Center"/>
+                        </VerticalStackLayout>
+                    </ContentView>
+                </CollectionView.EmptyView>
+            </CollectionView>
         </RefreshView>
+
+        <!-- Botão Flutuante - Adicionar Usuário -->
+        <Border Grid.Row="2"
+               StrokeThickness="0"
+               BackgroundColor="#2E4A8B"
+               WidthRequest="60"
+               HeightRequest="60"
+               HorizontalOptions="End"
+               VerticalOptions="End"
+               Margin="0,0,16,16"
+               StrokeShape="RoundRectangle 30">
+            <ImageButton Aspect="Center" 
+                        WidthRequest="30"
+                        HeightRequest="30"
+                        BackgroundColor="Transparent"
+                        Clicked="OnAdicionarUsuarioClicked">
+                <ImageButton.Source>
+                    <FontImageSource 
+                        Glyph="+" 
+                        FontFamily="Arial"
+                        Size="36" 
+                        Color="White"/>
+                </ImageButton.Source>
+            </ImageButton>
+
+            <Border.Shadow>
+                <Shadow Brush="Black"
+                       Offset="0,4"
+                       Radius="8"
+                       Opacity="0.3"/>
+            </Border.Shadow>
+        </Border>
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator Grid.Row="2"
+                          IsRunning="{Binding IsBusy}"
+                          IsVisible="{Binding IsBusy}"
+                          Color="#2E4A8B"
+                          WidthRequest="60"
+                          HeightRequest="60"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center"/>
     </Grid>
 </ContentPage>
