@@ -48,6 +48,7 @@ namespace AppDashboard.ViewModels
                 _usuariosFiltrados = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(ContagemUsuarios));
+                System.Diagnostics.Debug.WriteLine($"🔄 UsuariosFiltrados atualizado: {value?.Count ?? 0} itens");
             }
         }
 
@@ -68,7 +69,8 @@ namespace AppDashboard.ViewModels
             {
                 _unidadeSelecionada = value;
                 OnPropertyChanged();
-                AplicarFiltros();
+                System.Diagnostics.Debug.WriteLine($"🏢 Unidade selecionada: {value}");
+                AplicarFiltrosLocal();
             }
         }
 
@@ -77,9 +79,10 @@ namespace AppDashboard.ViewModels
             get => _situacaoSelecionada;
             set
             {
+                System.Diagnostics.Debug.WriteLine($"🎯 Situação mudou para '{value}'");
                 _situacaoSelecionada = value;
                 OnPropertyChanged();
-                _ = AplicarFiltroSituacaoAsync();
+                AplicarFiltrosLocal();
             }
         }
 
@@ -90,7 +93,8 @@ namespace AppDashboard.ViewModels
             {
                 _textoBusca = value;
                 OnPropertyChanged();
-                AplicarFiltros();
+                System.Diagnostics.Debug.WriteLine($"🔍 Busca: {value}");
+                AplicarFiltrosLocal();
             }
         }
 
@@ -120,51 +124,31 @@ namespace AppDashboard.ViewModels
         public int TotalUsuarios
         {
             get => _totalUsuarios;
-            set
-            {
-                _totalUsuarios = value;
-                OnPropertyChanged();
-            }
+            set { _totalUsuarios = value; OnPropertyChanged(); }
         }
 
         public int TotalTrabalhando
         {
             get => _totalTrabalhando;
-            set
-            {
-                _totalTrabalhando = value;
-                OnPropertyChanged();
-            }
+            set { _totalTrabalhando = value; OnPropertyChanged(); }
         }
 
         public int TotalDemitidos
         {
             get => _totalDemitidos;
-            set
-            {
-                _totalDemitidos = value;
-                OnPropertyChanged();
-            }
+            set { _totalDemitidos = value; OnPropertyChanged(); }
         }
 
         public int TotalAposentados
         {
             get => _totalAposentados;
-            set
-            {
-                _totalAposentados = value;
-                OnPropertyChanged();
-            }
+            set { _totalAposentados = value; OnPropertyChanged(); }
         }
 
         public int TotalAuxilioDoenca
         {
             get => _totalAuxilioDoenca;
-            set
-            {
-                _totalAuxilioDoenca = value;
-                OnPropertyChanged();
-            }
+            set { _totalAuxilioDoenca = value; OnPropertyChanged(); }
         }
 
         // ==================== COMANDOS ====================
@@ -187,6 +171,8 @@ namespace AppDashboard.ViewModels
             AtualizarListaCommand = new Command(async () => await CarregarDadosAsync());
             VerDetalhesCommand = new Command<Usuario>(async (usuario) => await VerDetalhes(usuario));
             DeletarUsuarioCommand = new Command<Usuario>(async (usuario) => await DeletarUsuario(usuario));
+
+            System.Diagnostics.Debug.WriteLine("✅ ViewModel criado");
         }
 
         // ==================== MÉTODOS PRINCIPAIS ====================
@@ -200,42 +186,56 @@ namespace AppDashboard.ViewModels
 
             try
             {
-                System.Diagnostics.Debug.WriteLine("🔄 Carregando usuários do banco de dados MySQL...");
+                System.Diagnostics.Debug.WriteLine("🔄 Carregando TODOS os usuários do banco...");
 
-                // Carregar todos os usuários
+                // Carregar TODOS os usuários de uma vez
                 Usuarios = await _usuarioService.ObterTodosUsuariosAsync();
+                System.Diagnostics.Debug.WriteLine($"📥 {Usuarios.Count} usuários carregados!");
 
-                // Carregar estatísticas
-                var stats = await _usuarioService.ObterEstatisticasPorSituacaoAsync();
-                TotalUsuarios = stats.ContainsKey("Total") ? stats["Total"] : Usuarios.Count;
-                TotalTrabalhando = stats.ContainsKey("Trabalhando") ? stats["Trabalhando"] : 0;
-                TotalDemitidos = stats.ContainsKey("Demitidos") ? stats["Demitidos"] : 0;
-                TotalAposentados = stats.ContainsKey("Aposentadoria por Invalidez") ? stats["Aposentadoria por Invalidez"] : 0;
-                TotalAuxilioDoenca = stats.ContainsKey("Auxílio Doença") ? stats["Auxílio Doença"] : 0;
+                // Calcular estatísticas localmente
+                TotalUsuarios = Usuarios.Count;
+                TotalTrabalhando = Usuarios.Count(u => u.EstaAtivo);
+                TotalDemitidos = Usuarios.Count(u => u.EstaDemitido);
+                TotalAposentados = Usuarios.Count(u => u.EstaAposentadoPorInvalidez);
+                TotalAuxilioDoenca = Usuarios.Count(u => u.EstaEmAuxilioDoenca);
 
-                // Carregar filtros de unidades
+                System.Diagnostics.Debug.WriteLine($"📊 Estatísticas calculadas:");
+                System.Diagnostics.Debug.WriteLine($"   Total: {TotalUsuarios}");
+                System.Diagnostics.Debug.WriteLine($"   ✅ Trabalhando: {TotalTrabalhando}");
+                System.Diagnostics.Debug.WriteLine($"   ❌ Demitidos: {TotalDemitidos}");
+                System.Diagnostics.Debug.WriteLine($"   🏥 Aposentados: {TotalAposentados}");
+                System.Diagnostics.Debug.WriteLine($"   🤕 Auxílio: {TotalAuxilioDoenca}");
+
+                // Verificar valores únicos na coluna situação
+                var situacoesUnicas = Usuarios
+                    .Select(u => u.DescricaoSituacao)
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .Distinct()
+                    .OrderBy(s => s)
+                    .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"📋 Situações encontradas no banco ({situacoesUnicas.Count}):");
+                foreach (var sit in situacoesUnicas.Take(10))
+                {
+                    var count = Usuarios.Count(u => u.DescricaoSituacao == sit);
+                    System.Diagnostics.Debug.WriteLine($"   '{sit}': {count} usuários");
+                }
+
+                // Carregar unidades
                 var unidades = await _usuarioService.ObterListaUnidadesAsync();
                 UnidadesGrupos = unidades;
 
-                // Aplicar filtro inicial
-                await AplicarFiltroSituacaoAsync();
+                // Aplicar filtro inicial (Todos)
+                AplicarFiltrosLocal();
 
-                System.Diagnostics.Debug.WriteLine($"✅ {TotalUsuarios} usuários carregados com sucesso!");
-                System.Diagnostics.Debug.WriteLine($"📊 Trabalhando: {TotalTrabalhando} | Demitidos: {TotalDemitidos} | Aposentados: {TotalAposentados} | Auxílio: {TotalAuxilioDoenca}");
+                System.Diagnostics.Debug.WriteLine($"✅ Carregamento concluído! Exibindo: {UsuariosFiltrados.Count}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro ao carregar dados: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"❌ StackTrace: {ex.StackTrace}");
-
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
                 await Application.Current!.MainPage!.DisplayAlert(
-                    "Erro ao Carregar Dados",
-                    $"Não foi possível carregar os usuários do banco de dados.\n\n" +
-                    $"Erro: {ex.Message}\n\n" +
-                    $"Verifique:\n" +
-                    $"• Conexão com internet\n" +
-                    $"• Credenciais do MySQL no AppDbContext.cs\n" +
-                    $"• Nome da tabela: rhdataset",
+                    "Erro",
+                    $"Não foi possível carregar os dados.\n\n{ex.Message}",
                     "OK");
             }
             finally
@@ -245,94 +245,78 @@ namespace AppDashboard.ViewModels
             }
         }
 
-        // ==================== FILTROS ====================
+        // ==================== FILTROS LOCAIS ====================
 
-        private async Task AplicarFiltroSituacaoAsync()
+        private void AplicarFiltrosLocal()
         {
-            if (IsBusy) return;
+            System.Diagnostics.Debug.WriteLine($"🔧 Aplicando filtros localmente...");
+            System.Diagnostics.Debug.WriteLine($"   Situação: {SituacaoSelecionada}");
+            System.Diagnostics.Debug.WriteLine($"   Unidade: {UnidadeSelecionada}");
+            System.Diagnostics.Debug.WriteLine($"   Busca: {TextoBusca}");
+            System.Diagnostics.Debug.WriteLine($"   Base: {Usuarios?.Count ?? 0} usuários");
 
-            try
+            if (Usuarios == null || Usuarios.Count == 0)
             {
-                System.Diagnostics.Debug.WriteLine($"🔍 Aplicando filtro de situação: {SituacaoSelecionada}");
-
-                ObservableCollection<Usuario> usuariosPorSituacao;
-
-                switch (SituacaoSelecionada?.ToUpper())
-                {
-                    case "TRABALHANDO":
-                        usuariosPorSituacao = await _usuarioService.ObterUsuariosTrabalhando();
-                        break;
-
-                    case "DEMITIDOS":
-                    case "DEMITIDO":
-                        usuariosPorSituacao = await _usuarioService.ObterUsuariosDemitidos();
-                        break;
-
-                    case "APOSENTADORIA POR INVALIDEZ":
-                    case "APOSENTADOS":
-                        usuariosPorSituacao = await _usuarioService.ObterUsuariosAposentadosPorInvalidez();
-                        break;
-
-                    case "AUXÍLIO DOENÇA":
-                    case "AUXILIO DOENÇA":
-                        usuariosPorSituacao = await _usuarioService.ObterUsuariosAuxilioDoenca();
-                        break;
-
-                    case "TODOS":
-                    default:
-                        usuariosPorSituacao = await _usuarioService.ObterTodosUsuariosAsync();
-                        break;
-                }
-
-                // Atualizar cache local
-                Usuarios.Clear();
-                foreach (var usuario in usuariosPorSituacao)
-                {
-                    Usuarios.Add(usuario);
-                }
-
-                // Aplicar outros filtros (unidade e busca)
-                AplicarFiltros();
-
-                System.Diagnostics.Debug.WriteLine($"✅ Filtro aplicado: {UsuariosFiltrados.Count} usuários exibidos");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro ao aplicar filtro: {ex.Message}");
-            }
-        }
-
-        private void AplicarFiltros()
-        {
-            if (Usuarios == null)
-            {
+                System.Diagnostics.Debug.WriteLine("⚠️ Nenhum usuário para filtrar");
                 UsuariosFiltrados = new ObservableCollection<Usuario>();
                 return;
             }
 
-            var usuariosFiltrados = Usuarios.AsEnumerable();
+            var filtrados = Usuarios.AsEnumerable();
 
-            // Filtrar por unidade/setor
-            if (!string.IsNullOrEmpty(UnidadeSelecionada) && UnidadeSelecionada != "Todas as Unidades")
+            // 1. Filtrar por SITUAÇÃO
+            if (!string.IsNullOrEmpty(SituacaoSelecionada) && SituacaoSelecionada != "Todos")
             {
-                usuariosFiltrados = usuariosFiltrados.Where(u => u.UnidadeGrupo == UnidadeSelecionada);
-                System.Diagnostics.Debug.WriteLine($"🔍 Filtrando por unidade: {UnidadeSelecionada}");
+                switch (SituacaoSelecionada.ToUpper())
+                {
+                    case "TRABALHANDO":
+                        filtrados = filtrados.Where(u => u.EstaAtivo);
+                        System.Diagnostics.Debug.WriteLine($"   ✅ Filtrando ativos: {filtrados.Count()}");
+                        break;
+
+                    case "DEMITIDOS":
+                    case "DEMITIDO":
+                        filtrados = filtrados.Where(u => u.EstaDemitido);
+                        System.Diagnostics.Debug.WriteLine($"   ❌ Filtrando demitidos: {filtrados.Count()}");
+                        break;
+
+                    case "APOSENTADORIA POR INVALIDEZ":
+                    case "APOSENTADOS":
+                        filtrados = filtrados.Where(u => u.EstaAposentadoPorInvalidez);
+                        System.Diagnostics.Debug.WriteLine($"   🏥 Filtrando aposentados: {filtrados.Count()}");
+                        break;
+
+                    case "AUXÍLIO DOENÇA":
+                    case "AUXILIO DOENÇA":
+                        filtrados = filtrados.Where(u => u.EstaEmAuxilioDoenca);
+                        System.Diagnostics.Debug.WriteLine($"   🤕 Filtrando auxílio: {filtrados.Count()}");
+                        break;
+                }
             }
 
-            // Filtrar por texto de busca
+            // 2. Filtrar por UNIDADE
+            if (!string.IsNullOrEmpty(UnidadeSelecionada) && UnidadeSelecionada != "Todas as Unidades")
+            {
+                filtrados = filtrados.Where(u => u.UnidadeGrupo == UnidadeSelecionada);
+                System.Diagnostics.Debug.WriteLine($"   🏢 Após filtro unidade: {filtrados.Count()}");
+            }
+
+            // 3. Filtrar por BUSCA
             if (!string.IsNullOrWhiteSpace(TextoBusca))
             {
                 var busca = TextoBusca.ToLower();
-                usuariosFiltrados = usuariosFiltrados.Where(u =>
+                filtrados = filtrados.Where(u =>
                     u.Nome.ToLower().Contains(busca) ||
                     u.Cargo.ToLower().Contains(busca) ||
                     (!string.IsNullOrEmpty(u.UnidadeGrupo) && u.UnidadeGrupo.ToLower().Contains(busca))
                 );
-                System.Diagnostics.Debug.WriteLine($"🔍 Buscando por: {TextoBusca}");
+                System.Diagnostics.Debug.WriteLine($"   🔍 Após busca: {filtrados.Count()}");
             }
 
-            UsuariosFiltrados = new ObservableCollection<Usuario>(usuariosFiltrados);
-            System.Diagnostics.Debug.WriteLine($"📋 Total após filtros: {UsuariosFiltrados.Count} usuários");
+            var resultado = filtrados.ToList();
+            UsuariosFiltrados = new ObservableCollection<Usuario>(resultado);
+
+            System.Diagnostics.Debug.WriteLine($"✅ Filtros aplicados! Resultado: {UsuariosFiltrados.Count} usuários");
         }
 
         // ==================== AÇÕES ====================
@@ -352,8 +336,11 @@ namespace AppDashboard.ViewModels
                 detalhes += $"🏢 Setor: {usuario.UnidadeGrupo}\n";
 
             detalhes += $"\n📊 STATUS:\n" +
-                       $"Cor: {usuario.StatusCor}\n" +
-                       $"Ativo: {(usuario.EstaAtivo ? "Sim" : "Não")}";
+                       $"Situação Real: '{usuario.DescricaoSituacao}'\n" +
+                       $"Ativo: {(usuario.EstaAtivo ? "Sim" : "Não")}\n" +
+                       $"Demitido: {(usuario.EstaDemitido ? "Sim" : "Não")}\n" +
+                       $"Aposentado: {(usuario.EstaAposentadoPorInvalidez ? "Sim" : "Não")}\n" +
+                       $"Auxílio Doença: {(usuario.EstaEmAuxilioDoenca ? "Sim" : "Não")}";
 
             await Application.Current!.MainPage!.DisplayAlert(
                 "Detalhes do Colaborador",
@@ -379,38 +366,26 @@ namespace AppDashboard.ViewModels
             try
             {
                 IsBusy = true;
-                System.Diagnostics.Debug.WriteLine($"🗑️ Excluindo usuário: {usuario.Nome} (ID: {usuario.Id})");
+                System.Diagnostics.Debug.WriteLine($"🗑️ Excluindo: {usuario.Nome}");
 
-                // TODO: Implementar exclusão no banco de dados
-                // bool sucesso = await _usuarioService.DeletarUsuarioAsync(usuario.Id);
-
-                // Por enquanto, apenas remove da lista local
                 Usuarios.Remove(usuario);
-                AplicarFiltros();
+                AplicarFiltrosLocal();
 
-                // Atualizar estatísticas
                 TotalUsuarios--;
                 if (usuario.EstaAtivo) TotalTrabalhando--;
                 else if (usuario.EstaDemitido) TotalDemitidos--;
                 else if (usuario.EstaAposentadoPorInvalidez) TotalAposentados--;
                 else if (usuario.EstaEmAuxilioDoenca) TotalAuxilioDoenca--;
 
-                System.Diagnostics.Debug.WriteLine($"✅ Usuário {usuario.Nome} excluído com sucesso!");
-
                 await Application.Current!.MainPage!.DisplayAlert(
                     "✅ Sucesso",
-                    $"Usuário '{usuario.Nome}' foi excluído com sucesso!",
+                    $"Usuário '{usuario.Nome}' excluído!",
                     "OK");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro ao excluir: {ex.Message}");
-
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "❌ Erro",
-                    $"Não foi possível excluir o usuário.\n\n" +
-                    $"Erro: {ex.Message}",
-                    "OK");
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                await Application.Current!.MainPage!.DisplayAlert("❌ Erro", ex.Message, "OK");
             }
             finally
             {

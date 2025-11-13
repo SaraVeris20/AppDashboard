@@ -3,7 +3,6 @@ using AppDashboard.Services;
 using AppDashboard.ViewModels;
 using AppDashboard.Views;
 using Microsoft.Extensions.Logging;
-using System;
 
 namespace AppDashboard
 {
@@ -26,11 +25,13 @@ namespace AppDashboard
             // Registrar serviços
             builder.Services.AddSingleton<UsuarioService>();
 
-            // Registrar páginas
-            builder.Services.AddTransient<AreaAdministrativaPage>();
-
             // Registrar ViewModels
             builder.Services.AddTransient<AreaAdministrativaViewModel>();
+            builder.Services.AddTransient<AdicionarUsuarioViewModel>();
+
+            // Registrar páginas com injeção de dependência
+            builder.Services.AddTransient<AreaAdministrativaPage>();
+            builder.Services.AddTransient<AdicionarUsuarioPage>();
 
 #if DEBUG
             builder.Logging.AddDebug();

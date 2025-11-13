@@ -13,26 +13,25 @@ namespace AppDashboard.Views
 
             _viewModel = new AreaAdministrativaViewModel(usuarioService);
             BindingContext = _viewModel;
+
+            System.Diagnostics.Debug.WriteLine("✅ AreaAdministrativaPage criada");
         }
 
         protected override async void OnAppearing()
         {
             base.OnAppearing();
 
-            System.Diagnostics.Debug.WriteLine("📱 AreaAdministrativaPage - OnAppearing");
+            System.Diagnostics.Debug.WriteLine("📱 OnAppearing - Carregando dados...");
 
             try
             {
                 await _viewModel.CarregarDadosAsync();
+                System.Diagnostics.Debug.WriteLine($"✅ Dados carregados! Exibindo {_viewModel.UsuariosFiltrados?.Count ?? 0} usuários");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"❌ Erro ao carregar: {ex.Message}");
-
-                await DisplayAlert(
-                    "Erro",
-                    "Não foi possível carregar os dados do banco.\n\nVerifique sua conexão.",
-                    "OK");
+                System.Diagnostics.Debug.WriteLine($"❌ Erro: {ex.Message}");
+                await DisplayAlert("Erro", $"Não foi possível carregar os dados.\n\n{ex.Message}", "OK");
             }
         }
 
@@ -48,30 +47,36 @@ namespace AppDashboard.Views
 
         private async void OnFiltroClicked(object sender, EventArgs e)
         {
+            System.Diagnostics.Debug.WriteLine("🔍 Abrindo menu de filtro...");
+
             string action = await DisplayActionSheet(
                 "Filtrar por Situação",
                 "Cancelar",
                 null,
+                "📋 Todos",
                 "✅ Trabalhando",
                 "❌ Demitidos",
                 "🏥 Aposentados por Invalidez",
-                "🤕 Auxílio Doença",
-                "📋 Todos");
+                "🤕 Auxílio Doença");
 
             if (string.IsNullOrEmpty(action) || action == "Cancelar")
                 return;
 
             string situacao = action switch
             {
+                "📋 Todos" => "Todos",
                 "✅ Trabalhando" => "Trabalhando",
                 "❌ Demitidos" => "Demitidos",
                 "🏥 Aposentados por Invalidez" => "Aposentadoria por Invalidez",
                 "🤕 Auxílio Doença" => "Auxílio Doença",
-                "📋 Todos" => "Todos",
                 _ => "Todos"
             };
 
+            System.Diagnostics.Debug.WriteLine($"🎯 Aplicando filtro: {situacao}");
             _viewModel.SituacaoSelecionada = situacao;
+
+            await Task.Delay(300);
+            System.Diagnostics.Debug.WriteLine($"📊 Resultado: {_viewModel.UsuariosFiltrados?.Count ?? 0} usuários");
         }
 
         private async void OnMenuClicked(object sender, EventArgs e)
@@ -82,7 +87,7 @@ namespace AppDashboard.Views
                 null,
                 "🔄 Atualizar Lista",
                 "📊 Estatísticas",
-                "🔍 Diagnóstico do Banco",
+                "🔍 Ver Situações do Banco",
                 "ℹ️ Sobre");
 
             switch (action)
@@ -95,23 +100,22 @@ namespace AppDashboard.Views
                     await MostrarEstatisticas();
                     break;
 
-                case "🔍 Diagnóstico do Banco":
-                    await MostrarDiagnostico();
+                case "🔍 Ver Situações do Banco":
+                    await MostrarSituacoesDoBanco();
                     break;
 
                 case "ℹ️ Sobre":
                     await DisplayAlert(
                         "RH Dashboard",
-                        "Sistema de Gestão de RH\n" +
-                        "Versão 1.0\n\n" +
-                        "📊 Conectado ao MySQL AWS\n" +
-                        "🗄️ Banco: rhsenior_heicomp\n" +
-                        "📋 Tabela: rhdataset\n\n" +
-                        "Recursos:\n" +
-                        "• Listagem de colaboradores\n" +
-                        "• Filtros por situação e unidade\n" +
-                        "• Busca em tempo real\n" +
-                        "• Estatísticas detalhadas",
+                        $"Sistema de Gestão de RH - v1.0\n\n" +
+                        $"📊 Banco: rhsenior_heicomp\n" +
+                        $"📋 Tabela: rhdataset\n" +
+                        $"👥 Total: {_viewModel.TotalUsuarios} usuários\n\n" +
+                        $"Recursos:\n" +
+                        $"• Listagem de colaboradores\n" +
+                        $"• Filtros por situação\n" +
+                        $"• Busca em tempo real\n" +
+                        $"• Estatísticas detalhadas",
                         "OK");
                     break;
             }
@@ -119,49 +123,74 @@ namespace AppDashboard.Views
 
         private async Task MostrarEstatisticas()
         {
-            var total = _viewModel.TotalUsuarios;
-            var trabalhando = _viewModel.TotalTrabalhando;
-            var demitidos = _viewModel.TotalDemitidos;
-            var aposentados = _viewModel.TotalAposentados;
-            var auxilio = _viewModel.TotalAuxilioDoenca;
-
             var mensagem = $"📊 ESTATÍSTICAS GERAIS\n\n" +
-                          $"👥 Total de Colaboradores: {total}\n\n" +
-                          $"DISTRIBUIÇÃO POR SITUAÇÃO:\n" +
-                          $"✅ Trabalhando: {trabalhando}\n" +
-                          $"❌ Demitidos: {demitidos}\n" +
-                          $"🏥 Aposentados: {aposentados}\n" +
-                          $"🤕 Auxílio Doença: {auxilio}";
+                          $"👥 Total: {_viewModel.TotalUsuarios}\n\n" +
+                          $"POR SITUAÇÃO:\n" +
+                          $"✅ Trabalhando: {_viewModel.TotalTrabalhando}\n" +
+                          $"❌ Demitidos: {_viewModel.TotalDemitidos}\n" +
+                          $"🏥 Aposentados: {_viewModel.TotalAposentados}\n" +
+                          $"🤕 Auxílio Doença: {_viewModel.TotalAuxilioDoenca}";
 
-            if (total > 0)
+            if (_viewModel.TotalUsuarios > 0)
             {
-                var percTrabalhando = (trabalhando * 100.0) / total;
-                var percDemitidos = (demitidos * 100.0) / total;
-                var percAposentados = (aposentados * 100.0) / total;
-                var percAuxilio = (auxilio * 100.0) / total;
+                var pTrab = (_viewModel.TotalTrabalhando * 100.0) / _viewModel.TotalUsuarios;
+                var pDem = (_viewModel.TotalDemitidos * 100.0) / _viewModel.TotalUsuarios;
+                var pApo = (_viewModel.TotalAposentados * 100.0) / _viewModel.TotalUsuarios;
+                var pAux = (_viewModel.TotalAuxilioDoenca * 100.0) / _viewModel.TotalUsuarios;
 
                 mensagem += $"\n\n📈 PERCENTUAIS:\n" +
-                           $"• Trabalhando: {percTrabalhando:F1}%\n" +
-                           $"• Demitidos: {percDemitidos:F1}%\n" +
-                           $"• Aposentados: {percAposentados:F1}%\n" +
-                           $"• Auxílio Doença: {percAuxilio:F1}%";
+                           $"• Trabalhando: {pTrab:F1}%\n" +
+                           $"• Demitidos: {pDem:F1}%\n" +
+                           $"• Aposentados: {pApo:F1}%\n" +
+                           $"• Auxílio: {pAux:F1}%";
             }
 
-            await DisplayAlert("Estatísticas Detalhadas", mensagem, "Fechar");
+            await DisplayAlert("Estatísticas", mensagem, "OK");
         }
 
-        private async Task MostrarDiagnostico()
+        private async Task MostrarSituacoesDoBanco()
         {
-            // Aqui você pode adicionar um método de diagnóstico no ViewModel
-            await DisplayAlert(
-                "Diagnóstico",
-                "🔍 Testando conexão com banco de dados...\n\n" +
-                "✅ Conexão: OK\n" +
-                "✅ Banco: rhsenior_heicomp\n" +
-                "✅ Tabela: rhdataset\n" +
-                $"✅ Registros: {_viewModel.TotalUsuarios}\n\n" +
-                "Sistema funcionando corretamente!",
-                "OK");
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("🔍 Buscando situações únicas...");
+
+                var service = new UsuarioService();
+                var todos = await service.ObterTodosUsuariosAsync();
+
+                // Agrupar por situação
+                var situacoes = todos
+                    .Where(u => !string.IsNullOrEmpty(u.DescricaoSituacao))
+                    .GroupBy(u => u.DescricaoSituacao)
+                    .OrderByDescending(g => g.Count())
+                    .Take(15)
+                    .ToList();
+
+                var mensagem = $"📋 SITUAÇÕES NO BANCO\n" +
+                              $"(Total: {todos.Count} usuários)\n\n";
+
+                foreach (var grupo in situacoes)
+                {
+                    var emoji = grupo.Key?.ToUpper() switch
+                    {
+                        var s when s.Contains("TRABALH") => "✅",
+                        var s when s.Contains("DEMIT") => "❌",
+                        var s when s.Contains("APOSENT") => "🏥",
+                        var s when s.Contains("AUXIL") || s.Contains("DOENÇA") || s.Contains("DOENCA") => "🤕",
+                        _ => "❓"
+                    };
+
+                    mensagem += $"{emoji} '{grupo.Key}'\n   → {grupo.Count()} usuários\n\n";
+                }
+
+                mensagem += $"💡 Use essas informações para\n" +
+                           $"entender os filtros disponíveis!";
+
+                await DisplayAlert("Situações do Banco", mensagem, "OK");
+            }
+            catch (Exception ex)
+            {
+                await DisplayAlert("Erro", ex.Message, "OK");
+            }
         }
     }
 }
